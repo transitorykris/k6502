@@ -81,6 +81,13 @@ mod tests {
     }
 
     #[test]
+    fn test_move_pc() {
+        let mut p = Processor::new();
+        p.move_pc(0x1234);
+        assert_eq!(p.pc, 0x1234);
+    }
+
+    #[test]
     fn test_reset() {
         let mut p = Processor::new();
         p.memory[0xFFFC] = 0x34;
