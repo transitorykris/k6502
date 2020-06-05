@@ -26,8 +26,13 @@ struct Processor {
 }
 
 // Processor status register flags
+const NEGATIVE_FLAG: u8 = 0b10000000;
+const OVERFLOW_FLAG: u8 = 0b01000000;
+const BRK_FLAG: u8 = 0b00010000;
 const DECIMAL_MODE: u8 = 0b00001000;
 const INTERRUPT_DISABLE: u8 = 0b00000100;
+const ZERO_FLAG: u8 = 0b00000010;
+const CARRY_FLAG: u8 = 0b00000001;
 
 impl Processor {
     fn new() -> Processor {
