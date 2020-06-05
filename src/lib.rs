@@ -1,14 +1,18 @@
+#![allow(dead_code)]
+
 use std::error::Error;
 
-#[allow(dead_code)]
 const MAX_MEMORY_SIZE: usize = 65536;
 type Memory = [u8; MAX_MEMORY_SIZE];
+
+const NMI_VECTOR: u16 = 0xFFFA;
+const RESET_VECTOR: u16 = 0xFFFC;
+const IRQ_VECTOR: u16 = 0xFFFE;
 
 type Register8 = u8;
 type Register16 = u16;
 type Instruction = u8;
 
-#[allow(dead_code)]
 struct Processor {
     a: Register8,       // Accumulator
     x: Register8,       // X index
@@ -46,7 +50,6 @@ pub fn run() -> Result<(), Box<dyn Error>> {
 #[cfg(test)]
 mod tests {
     use super::Processor;
-    use super::MAX_MEMORY_SIZE;
 
     #[test]
     fn test_default_processor() {
