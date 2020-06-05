@@ -25,6 +25,10 @@ struct Processor {
     memory: Memory,     // One big flat space for now
 }
 
+// Processor status register flags
+const DECIMAL_MODE: u8 = 0b00001000;
+const INTERRUPT_DISABLE: u8 = 0b00000100;
+
 impl Processor {
     fn new() -> Processor {
         Processor {
@@ -41,6 +45,13 @@ impl Processor {
 
     fn move_pc(&mut self, address: Address) {
         self.pc = address;
+    }
+
+    // Performs a hardware reset of the Processor Status Register (p)
+    // Only the Decimal and Interrupt disable mode select bits are affected
+    fn reset_p(&mut self) {
+        self.p = self.p & !DECIMAL_MODE;
+        self.p = self.p & !INTERRUPT_DISABLE;
     }
 
     // Performs a reset on the processor
@@ -64,6 +75,8 @@ pub fn run() -> Result<(), Box<dyn Error>> {
 mod tests {
     use super::Processor;
     use super::RESET_VECTOR;
+    use super::DECIMAL_MODE;
+    use super::INTERRUPT_DISABLE;
 
     #[test]
     fn test_default_processor() {
@@ -85,6 +98,15 @@ mod tests {
         let mut p = Processor::new();
         p.move_pc(0x1234);
         assert_eq!(p.pc, 0x1234);
+    }
+
+    #[test]
+    fn test_reset_p() {
+        let mut p = Processor::new();
+        p.p = 0xFF;
+        p.reset_p();
+        assert_eq!(p.p & DECIMAL_MODE, 0);
+        assert_eq!(p.p & INTERRUPT_DISABLE, 0);
     }
 
     #[test]
