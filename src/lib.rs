@@ -72,6 +72,22 @@ impl Processor {
         self.pc = self.pc.overflowing_add(1).0;
     }
 
+    // Fetches the next opcode and operand
+    fn fetch(&mut self) -> Result<(Instruction, Vec<u8>), Box<dyn Error>> {
+        let opcode = self.next().unwrap();
+        match opcode {
+            0xEA => { // NOP
+                Ok((0xEA, Vec::new()))
+            },
+            0xDB => { // STP
+                Ok((0xDB, Vec::new()))
+            }
+            _ => {
+                panic!("Unknown opcode {}", opcode);
+            }
+        }
+    }
+
     // Execute the given opcode
     fn execute(&mut self, opcode: Instruction) -> Option<()> {
         match opcode {
@@ -211,5 +227,21 @@ mod tests {
         assert_eq!(p.pc, 0x1235);
         let opcode = p.next().unwrap();
         assert_eq!(p.execute(opcode), None);
+    }
+
+    #[test]
+    fn test_fetch() {
+        let mut p = Processor::new();
+        p.memory[0xFFFC] = 0x34;
+        p.memory[0xFFFD] = 0x12;
+        p.memory[0x1234] = 0xEA;    // NOP
+        p.memory[0x1235] = 0xDB;    // STP
+        p.reset();
+        let (opcode, operand) = p.fetch().unwrap();
+        assert_eq!(opcode, 0xEA);
+        assert_eq!(operand.len(), 0);
+        let (opcode, operand) = p.fetch().unwrap();
+        assert_eq!(opcode, 0xDB);
+        assert_eq!(operand.len(), 0);
     }
 }
