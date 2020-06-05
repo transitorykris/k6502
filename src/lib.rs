@@ -12,7 +12,8 @@ const IRQ_VECTOR: Address = 0xFFFE;
 
 type Register8 = u8;
 type Register16 = u16;
-type Instruction = u8;
+type Opcode = u8;
+type Operand = Vec<u8>;
 
 struct Processor {
     a: Register8,       // Accumulator
@@ -21,7 +22,7 @@ struct Processor {
     p: Register8,       // Processor status
     pc: Register16,     // Program counter
     sp: Register8,      // Stack pointer
-    ir: Instruction,    // Instruction register
+    ir: Opcode,         // Instruction register
     memory: Memory,     // One big flat space for now
 }
 
@@ -73,7 +74,7 @@ impl Processor {
     }
 
     // Fetches the next opcode and operand
-    fn fetch(&mut self) -> Result<(Instruction, Vec<u8>), Box<dyn Error>> {
+    fn fetch(&mut self) -> Result<(Opcode, Operand), Box<dyn Error>> {
         let opcode = self.next().unwrap();
         match opcode {
             0xEA => { // NOP
@@ -89,7 +90,7 @@ impl Processor {
     }
 
     // Execute the given opcode
-    fn execute(&mut self, opcode: Instruction) -> Option<()> {
+    fn execute(&mut self, opcode: Opcode, operand: Operand) -> Option<()> {
         match opcode {
             0xEA => { // NOP
                 Some(())
@@ -218,7 +219,8 @@ mod tests {
         let ps = p.p;
         let sp = p.sp;
         let opcode = p.next().unwrap();
-        assert_eq!(p.execute(opcode), Some(()));
+        let operand = Vec::new();
+        assert_eq!(p.execute(opcode, operand), Some(()));
         assert_eq!(p.a, a);
         assert_eq!(p.x, x);
         assert_eq!(p.y, y);
@@ -226,7 +228,8 @@ mod tests {
         assert_eq!(p.sp, sp);
         assert_eq!(p.pc, 0x1235);
         let opcode = p.next().unwrap();
-        assert_eq!(p.execute(opcode), None);
+        let operand = Vec::new();
+        assert_eq!(p.execute(opcode, operand), None);
     }
 
     #[test]
