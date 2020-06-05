@@ -146,6 +146,7 @@ mod tests {
         p.memory[0x1234] = 0xab;
         p.reset();
         assert_eq!(p.next().unwrap(), 0xab);
+        assert_eq!(p.pc, 0x1235);
     }
 
     #[test]
@@ -153,6 +154,7 @@ mod tests {
         let mut p = Processor::new();
         p.increment_pc();
         assert_eq!(p.pc, 0x0001);
+        // Make sure we wrap around to 0x0000
         p.pc = u16::MAX;
         p.increment_pc();
         assert_eq!(p.pc, 0x0000);
