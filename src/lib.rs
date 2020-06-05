@@ -46,5 +46,10 @@ mod tests {
         assert_eq!(p.a, 0x00);
         assert_eq!(p.x, 0x00);
         assert_eq!(p.y, 0x00);
+        assert_eq!(p.p, 0x00);
+        assert_eq!(p.pc, 0x0000);
+        assert_eq!(p.sp, 0x00);
+        assert_eq!(p.ir, 0x00);
+
     }
 }
