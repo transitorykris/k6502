@@ -1,9 +1,14 @@
 use std::error::Error;
 
+#[allow(dead_code)]
+const MAX_MEMORY_SIZE: usize = 65536;
+type Memory = [u8; MAX_MEMORY_SIZE];
+
 type Register8 = u8;
 type Register16 = u16;
 type Instruction = u8;
 
+#[allow(dead_code)]
 struct Processor {
     a: Register8,       // Accumulator
     x: Register8,       // X index
@@ -12,6 +17,7 @@ struct Processor {
     pc: Register16,     // Program counter
     sp: Register8,      // Stack pointer
     ir: Instruction,    // Instruction register
+    memory: Memory,     // One big flat space for now
 }
 
 impl Processor {
@@ -24,6 +30,7 @@ impl Processor {
             pc: 0x0000,
             sp: 0x00,
             ir: 0x00,
+            memory: [0x00; MAX_MEMORY_SIZE],
         }
     }
 }
@@ -39,6 +46,7 @@ pub fn run() -> Result<(), Box<dyn Error>> {
 #[cfg(test)]
 mod tests {
     use super::Processor;
+    use super::MAX_MEMORY_SIZE;
 
     #[test]
     fn test_default_processor() {
@@ -50,6 +58,8 @@ mod tests {
         assert_eq!(p.pc, 0x0000);
         assert_eq!(p.sp, 0x00);
         assert_eq!(p.ir, 0x00);
-
+        for l in p.memory.iter() {
+            assert_eq!(*l, 0x00);
+        }
     }
 }
