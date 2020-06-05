@@ -4,10 +4,11 @@ use std::error::Error;
 
 const MAX_MEMORY_SIZE: usize = 65536;
 type Memory = [u8; MAX_MEMORY_SIZE];
+type Address = u16;
 
-const NMI_VECTOR: u16 = 0xFFFA;
-const RESET_VECTOR: u16 = 0xFFFC;
-const IRQ_VECTOR: u16 = 0xFFFE;
+const NMI_VECTOR: Address = 0xFFFA;
+const RESET_VECTOR: Address = 0xFFFC;
+const IRQ_VECTOR: Address = 0xFFFE;
 
 type Register8 = u8;
 type Register16 = u16;
@@ -37,6 +38,18 @@ impl Processor {
             memory: [0x00; MAX_MEMORY_SIZE],
         }
     }
+
+    fn move_pc(&mut self, address: Address) {
+        self.pc = address;
+    }
+
+    // Performs a reset on the processor
+    fn reset(&mut self) {
+        self.move_pc(
+            (self.memory[RESET_VECTOR as usize + 1] as u16).wrapping_shl(8) +
+            self.memory[RESET_VECTOR as usize] as u16
+        );
+    }
 }
 
 pub fn run() -> Result<(), Box<dyn Error>> {
@@ -50,6 +63,7 @@ pub fn run() -> Result<(), Box<dyn Error>> {
 #[cfg(test)]
 mod tests {
     use super::Processor;
+    use super::RESET_VECTOR;
 
     #[test]
     fn test_default_processor() {
@@ -64,5 +78,14 @@ mod tests {
         for l in p.memory.iter() {
             assert_eq!(*l, 0x00);
         }
+    }
+
+    #[test]
+    fn test_reset() {
+        let mut p = Processor::new();
+        p.memory[0xFFFC] = 0x34;
+        p.memory[0xFFFD] = 0x12;
+        p.reset();
+        assert_eq!(p.pc, 0x1234);
     }
 }
