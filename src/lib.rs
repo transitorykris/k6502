@@ -84,9 +84,7 @@ impl Iterator for Processor {
 }
 
 pub fn run() -> Result<(), Box<dyn Error>> {
-    println!("Hello k6502!");
-
-    let _p = Processor::new();
+    let mut _p = Processor::new();
 
     Ok(())
 }
@@ -158,5 +156,20 @@ mod tests {
         p.pc = u16::MAX;
         p.increment_pc();
         assert_eq!(p.pc, 0x0000);
+    }
+
+    #[test]
+    fn test_simple_code() {
+        let mut p = Processor::new();
+        p.memory[0xFFFC] = 0x34;
+        p.memory[0xFFFD] = 0x12;
+        p.memory[0x1234] = 0xEA;    // NOP
+        p.memory[0x1235] = 0xEA;    // NOP
+        p.memory[0x1236] = 0xDB;    // STP
+        p.reset();
+        assert_eq!(p.next().unwrap(), 0xEA);
+        assert_eq!(p.next().unwrap(), 0xEA);
+        assert_eq!(p.next().unwrap(), 0xDB);
+        assert_eq!(p.pc, 0x1237);
     }
 }
