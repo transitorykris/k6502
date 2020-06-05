@@ -101,8 +101,7 @@ impl Processor {
     fn execute(&mut self, opcode: Opcode, operand: Operand) -> Option<()> {
         match opcode {
             0xA9 => { // LDA #
-                let address = ((operand[1] as u16).wrapping_shl(8) + operand[0] as u16) as usize;
-                let value = self.memory[address];
+                let value = self.memory[bytes_to_usize(operand)];
                 self.set_a(value);
                 Some(())
             },
@@ -117,6 +116,11 @@ impl Processor {
             },
         }
     }
+}
+
+// Returns a usize of the first two little endian bytes
+fn bytes_to_usize(bytes: Vec<u8>) -> usize {
+    ((bytes[1] as u16).wrapping_shl(8) + bytes[0] as u16) as usize
 }
 
 impl Iterator for Processor {
@@ -141,6 +145,7 @@ mod tests {
     use super::RESET_VECTOR;
     use super::DECIMAL_MODE;
     use super::INTERRUPT_DISABLE;
+    use super::bytes_to_usize;
 
     #[test]
     fn test_default_processor() {
@@ -289,5 +294,10 @@ mod tests {
         let (opcode, operand) = p.fetch().unwrap();
         assert_eq!(opcode, 0xEA);
         assert_eq!(operand.len(), 0);
+    }
+
+    #[test]
+    fn test_bytes_to_usize() {
+        assert_eq!(bytes_to_usize(vec![0x34, 0x12]), 0x1234);
     }
 }
