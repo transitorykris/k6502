@@ -81,39 +81,30 @@ impl Processor {
     // Fetches the next opcode and operand
     fn fetch(&mut self) -> Result<(Opcode, Operand), Box<dyn Error>> {
         let opcode = self.next().unwrap();
+        let mut operand = Vec::new();
         match opcode {
-            0xA9 => { // LDA #
-                Ok((0xA9, vec![self.next().unwrap(), self.next().unwrap()]))
-            }
-            0xDB => { // STP
-                Ok((0xDB, Vec::new()))
+            0xA9 => {           // LDA #
+                operand.push(self.next().unwrap());
+                operand.push(self.next().unwrap());
             },
-            0xEA => { // NOP
-                Ok((0xEA, Vec::new()))
-            },
-            _ => {
-                panic!("Unknown opcode {}", opcode);
-            },
+            0xDB => {},         // STP
+            0xEA => {},         // NOP
+            _ => panic!("Unknown opcode {}", opcode),
         }
+        Ok((opcode, operand))
     }
 
     // Execute the given opcode
     fn execute(&mut self, opcode: Opcode, operand: Operand) -> Option<()> {
         match opcode {
-            0xA9 => { // LDA #
+            0xA9 => {           // LDA #
                 let value = self.get_memory_value(bytes_to_u16(operand));
                 self.set_a(value);
                 Some(())
             },
-            0xDB => { // STP
-                None
-            },
-            0xEA => { // NOP
-                Some(())
-            },
-            _ => {
-                panic!("Unknown opcode {}", opcode);
-            },
+            0xDB => None,       // STP
+            0xEA => Some(()),   // NOP
+            _ => panic!("Unknown opcode {}", opcode),
         }
     }
 
