@@ -40,7 +40,7 @@ impl Processor {
             a: 0x00,
             x: 0x00,
             y: 0x00,
-            p: 0x00,
+            p: 0b00100000,  // 6th bit is always 1
             pc: 0x0000,
             sp: 0x00,
             ir: 0x00,
@@ -89,7 +89,7 @@ mod tests {
         assert_eq!(p.a, 0x00);
         assert_eq!(p.x, 0x00);
         assert_eq!(p.y, 0x00);
-        assert_eq!(p.p, 0x00);
+        assert_eq!(p.p, 0b00100000);
         assert_eq!(p.pc, 0x0000);
         assert_eq!(p.sp, 0x00);
         assert_eq!(p.ir, 0x00);
