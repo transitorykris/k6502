@@ -71,6 +71,21 @@ impl Processor {
     fn increment_pc(&mut self) {
         self.pc = self.pc.overflowing_add(1).0;
     }
+
+    // Execute the given opcode
+    fn execute(&mut self, opcode: Instruction) -> Option<()> {
+        match opcode {
+            0xEA => { // NOP
+                Some(())
+            },
+            0xDB => { // STP
+                None
+            },
+            _ => {
+                panic!("Unknown opcode {}", opcode);
+            }
+        }
+    }
 }
 
 impl Iterator for Processor {
@@ -171,5 +186,30 @@ mod tests {
         assert_eq!(p.next().unwrap(), 0xEA);
         assert_eq!(p.next().unwrap(), 0xDB);
         assert_eq!(p.pc, 0x1237);
+    }
+
+    #[test]
+    fn test_execute() {
+        let mut p = Processor::new();
+        p.memory[0xFFFC] = 0x34;
+        p.memory[0xFFFD] = 0x12;
+        p.memory[0x1234] = 0xEA;    // NOP
+        p.memory[0x1235] = 0xDB;    // STP
+        p.reset();
+        let a = p.a;
+        let x = p.x;
+        let y = p.y;
+        let ps = p.p;
+        let sp = p.sp;
+        let opcode = p.next().unwrap();
+        assert_eq!(p.execute(opcode), Some(()));
+        assert_eq!(p.a, a);
+        assert_eq!(p.x, x);
+        assert_eq!(p.y, y);
+        assert_eq!(p.p, ps);
+        assert_eq!(p.sp, sp);
+        assert_eq!(p.pc, 0x1235);
+        let opcode = p.next().unwrap();
+        assert_eq!(p.execute(opcode), None);
     }
 }
