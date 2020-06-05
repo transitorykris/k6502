@@ -66,14 +66,19 @@ impl Processor {
             self.memory[RESET_VECTOR as usize] as u16
         );
     }
+
+    // Move the Program Counter to the next location
+    fn increment_pc(&mut self) {
+        self.pc = self.pc.overflowing_add(1).0;
+    }
 }
 
 impl Iterator for Processor {
     type Item = u8;
 
     fn next(&mut self) -> Option<u8> {
-        println!("Next opcode is {}", self.memory[self.pc as usize]);
         let val = self.memory[self.pc as usize];
+        self.increment_pc();        
         Some(val)
     }
 }
@@ -141,5 +146,15 @@ mod tests {
         p.memory[0x1234] = 0xab;
         p.reset();
         assert_eq!(p.next().unwrap(), 0xab);
+    }
+
+    #[test]
+    fn test_increment_pc() {
+        let mut p = Processor::new();
+        p.increment_pc();
+        assert_eq!(p.pc, 0x0001);
+        p.pc = u16::MAX;
+        p.increment_pc();
+        assert_eq!(p.pc, 0x0000);
     }
 }
