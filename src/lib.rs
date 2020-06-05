@@ -101,7 +101,7 @@ impl Processor {
     fn execute(&mut self, opcode: Opcode, operand: Operand) -> Option<()> {
         match opcode {
             0xA9 => { // LDA #
-                let value = self.memory[bytes_to_usize(operand)];
+                let value = self.get_memory_value(bytes_to_u16(operand));
                 self.set_a(value);
                 Some(())
             },
@@ -116,18 +116,23 @@ impl Processor {
             },
         }
     }
+
+    // Retrieve the memory value at the given address
+    fn get_memory_value(&mut self, address: u16) -> u8 {
+        self.memory[address as usize]
+    }
 }
 
-// Returns a usize of the first two little endian bytes
-fn bytes_to_usize(bytes: Vec<u8>) -> usize {
-    ((bytes[1] as u16).wrapping_shl(8) + bytes[0] as u16) as usize
+// Returns a u16 of the first two little endian bytes
+fn bytes_to_u16(bytes: Vec<u8>) -> u16 {
+    (bytes[1] as u16).wrapping_shl(8) + bytes[0] as u16
 }
 
 impl Iterator for Processor {
     type Item = u8;
 
     fn next(&mut self) -> Option<u8> {
-        let val = self.memory[self.pc as usize];
+        let val = self.get_memory_value(self.pc);
         self.increment_pc();        
         Some(val)
     }
@@ -145,7 +150,7 @@ mod tests {
     use super::RESET_VECTOR;
     use super::DECIMAL_MODE;
     use super::INTERRUPT_DISABLE;
-    use super::bytes_to_usize;
+    use super::bytes_to_u16;
 
     #[test]
     fn test_default_processor() {
@@ -297,7 +302,14 @@ mod tests {
     }
 
     #[test]
-    fn test_bytes_to_usize() {
-        assert_eq!(bytes_to_usize(vec![0x34, 0x12]), 0x1234);
+    fn test_bytes_to_u16() {
+        assert_eq!(bytes_to_u16(vec![0x34, 0x12]), 0x1234);
+    }
+
+    #[test]
+    fn get_memory_value() {
+        let mut p = Processor::new();
+        p.memory[0x1234] = 0xAB;
+        assert_eq!(p.get_memory_value(0x1234), 0xAB);
     }
 }
