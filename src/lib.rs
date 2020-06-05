@@ -4,7 +4,7 @@ type Register8 = u8;
 type Register16 = u16;
 type Instruction = u8;
 
-pub struct Processor {
+struct Processor {
     a: Register8,       // Accumulator
     x: Register8,       // X index
     y: Register8,       // Y index
@@ -15,7 +15,7 @@ pub struct Processor {
 }
 
 impl Processor {
-    pub fn new() -> Processor {
+    fn new() -> Processor {
         Processor {
             a: 0x00,
             x: 0x00,
