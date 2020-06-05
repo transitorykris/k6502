@@ -83,12 +83,28 @@ impl Processor {
         let opcode = self.next().unwrap();
         let mut operand = Vec::new();
         match opcode {
+            0x18 => {},         // CLC
+            0xD8 => {},         // CLD
+            0x58 => {},         // CLI
+            0xCA => {},         // DEX
+            0x88 => {},         // DEY
+            0xE8 => {},         // INX
+            0xC8 => {},         // INY
             0xA9 => {           // LDA #
                 operand.push(self.next().unwrap());
                 operand.push(self.next().unwrap());
             },
-            0xDB => {},         // STP
             0xEA => {},         // NOP
+            0x38 => {},         // SEC
+            0xF8 => {},         // SED
+            0xDB => {},         // STP
+            0xAA => {},         // TAX
+            0xA8 => {},         // TAY
+            0xBA => {},         // TSX
+            0x8A => {},         // TXA
+            0x9A => {},         // TXS
+            0x98 => {},         // TYA
+            0xCB => {},         // WAI
             _ => panic!("Unknown opcode {}", opcode),
         }
         Ok((opcode, operand))
