@@ -77,30 +77,30 @@ impl Processor {
     fn fetch(&mut self) -> Result<(Opcode, Operand), Box<dyn Error>> {
         let opcode = self.next().unwrap();
         match opcode {
+            0xDB => { // STP
+                Ok((0xDB, Vec::new()))
+            },
             0xEA => { // NOP
                 Ok((0xEA, Vec::new()))
             },
-            0xDB => { // STP
-                Ok((0xDB, Vec::new()))
-            }
             _ => {
                 panic!("Unknown opcode {}", opcode);
-            }
+            },
         }
     }
 
     // Execute the given opcode
     fn execute(&mut self, opcode: Opcode, operand: Operand) -> Option<()> {
         match opcode {
-            0xEA => { // NOP
-                Some(())
-            },
             0xDB => { // STP
                 None
             },
+            0xEA => { // NOP
+                Some(())
+            },
             _ => {
                 panic!("Unknown opcode {}", opcode);
-            }
+            },
         }
     }
 }
