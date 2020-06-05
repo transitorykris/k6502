@@ -26,13 +26,13 @@ struct Processor {
 }
 
 // Processor status register flags
-const NEGATIVE_FLAG: u8 = 0b10000000;
-const OVERFLOW_FLAG: u8 = 0b01000000;
-const BRK_FLAG: u8 = 0b00010000;
-const DECIMAL_MODE: u8 = 0b00001000;
-const INTERRUPT_DISABLE: u8 = 0b00000100;
-const ZERO_FLAG: u8 = 0b00000010;
-const CARRY_FLAG: u8 = 0b00000001;
+const NEGATIVE_FLAG: u8 = 0b1000_0000;
+const OVERFLOW_FLAG: u8 = 0b0100_0000;
+const BRK_FLAG: u8 = 0b0001_0000;
+const DECIMAL_MODE: u8 = 0b0000_1000;
+const INTERRUPT_DISABLE: u8 = 0b0000_0100;
+const ZERO_FLAG: u8 = 0b0000_0010;
+const CARRY_FLAG: u8 = 0b0000_0001;
 
 impl Processor {
     fn new() -> Processor {
@@ -40,7 +40,7 @@ impl Processor {
             a: 0x00,
             x: 0x00,
             y: 0x00,
-            p: 0b00100000,  // 6th bit is always 1
+            p: 0b0010_0000,  // 6th bit is always 1
             pc: 0x0000,
             sp: 0x00,
             ir: 0x00,
@@ -55,8 +55,8 @@ impl Processor {
     // Performs a hardware reset of the Processor Status Register (p)
     // Only the Decimal and Interrupt disable mode select bits are affected
     fn reset_p(&mut self) {
-        self.p = self.p & !DECIMAL_MODE;
-        self.p = self.p & !INTERRUPT_DISABLE;
+        self.p &= !DECIMAL_MODE;
+        self.p &= !INTERRUPT_DISABLE;
     }
 
     // Performs a reset on the processor
