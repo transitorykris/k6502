@@ -90,8 +90,8 @@ mod tests {
     #[test]
     fn test_reset() {
         let mut p = Processor::new();
-        p.memory[0xFFFC] = 0x34;
-        p.memory[0xFFFD] = 0x12;
+        p.memory[RESET_VECTOR as usize] = 0x34;
+        p.memory[RESET_VECTOR as usize + 1] = 0x12;
         p.reset();
         assert_eq!(p.pc, 0x1234);
     }
