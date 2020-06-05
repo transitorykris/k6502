@@ -68,6 +68,16 @@ impl Processor {
     }
 }
 
+impl Iterator for Processor {
+    type Item = u8;
+
+    fn next(&mut self) -> Option<u8> {
+        println!("Next opcode is {}", self.memory[self.pc as usize]);
+        let val = self.memory[self.pc as usize];
+        Some(val)
+    }
+}
+
 pub fn run() -> Result<(), Box<dyn Error>> {
     println!("Hello k6502!");
 
@@ -121,5 +131,15 @@ mod tests {
         p.memory[RESET_VECTOR as usize + 1] = 0x12;
         p.reset();
         assert_eq!(p.pc, 0x1234);
+    }
+
+    #[test]
+    fn test_processor_next() {
+        let mut p = Processor::new();
+        p.memory[RESET_VECTOR as usize] = 0x34;
+        p.memory[RESET_VECTOR as usize + 1] = 0x12;
+        p.memory[0x1234] = 0xab;
+        p.reset();
+        assert_eq!(p.next().unwrap(), 0xab);
     }
 }
