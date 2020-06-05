@@ -77,6 +77,9 @@ impl Processor {
     fn fetch(&mut self) -> Result<(Opcode, Operand), Box<dyn Error>> {
         let opcode = self.next().unwrap();
         match opcode {
+            0xA9 => { // LDA #
+                Ok((0xA9, vec![self.next().unwrap(), self.next().unwrap()]))
+            }
             0xDB => { // STP
                 Ok((0xDB, Vec::new()))
             },
@@ -239,6 +242,9 @@ mod tests {
         p.memory[0xFFFD] = 0x12;
         p.memory[0x1234] = 0xEA;    // NOP
         p.memory[0x1235] = 0xDB;    // STP
+        p.memory[0x1236] = 0xA9;    // LDA #
+        p.memory[0x1237] = 0x34;    // Lo byte
+        p.memory[0x1238] = 0x12;    // Hi byte
         p.reset();
         let (opcode, operand) = p.fetch().unwrap();
         assert_eq!(opcode, 0xEA);
@@ -246,5 +252,10 @@ mod tests {
         let (opcode, operand) = p.fetch().unwrap();
         assert_eq!(opcode, 0xDB);
         assert_eq!(operand.len(), 0);
+        let (opcode, operand) = p.fetch().unwrap();
+        assert_eq!(opcode, 0xA9);
+        assert_eq!(operand[0], 0x34);
+        assert_eq!(operand[1], 0x12);
+        assert_eq!(p.pc, 0x1239);
     }
 }
