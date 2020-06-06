@@ -10,20 +10,22 @@ const NMI_VECTOR: Address = 0xFFFA;
 const RESET_VECTOR: Address = 0xFFFC;
 const IRQ_VECTOR: Address = 0xFFFE;
 
+const ADDRESS_MODE_MASK: u8 = 0b0001_1100;
+
 type Register8 = u8;
 type Register16 = u16;
 type Opcode = u8;
 type Operand = Vec<u8>;
 
 struct Processor {
-    a: Register8,       // Accumulator
-    x: Register8,       // X index
-    y: Register8,       // Y index
-    p: Register8,       // Processor status
-    pc: Register16,     // Program counter
-    sp: Register8,      // Stack pointer
-    ir: Opcode,         // Instruction register
-    memory: Memory,     // One big flat space for now
+    a: Register8,   // Accumulator
+    x: Register8,   // X index
+    y: Register8,   // Y index
+    p: Register8,   // Processor status
+    pc: Register16, // Program counter
+    sp: Register8,  // Stack pointer
+    ir: Opcode,     // Instruction register
+    memory: Memory, // One big flat space for now
 }
 
 // Processor status register flags
@@ -41,7 +43,7 @@ impl Processor {
             a: 0x00,
             x: 0x00,
             y: 0x00,
-            p: 0b0010_0000,  // 6th bit is always 1
+            p: 0b0010_0000, // 6th bit is always 1
             pc: 0x0000,
             sp: 0x00,
             ir: 0x00,
@@ -63,8 +65,8 @@ impl Processor {
     // Performs a reset on the processor
     fn reset(&mut self) {
         self.move_pc(
-            (self.memory[RESET_VECTOR as usize + 1] as u16).wrapping_shl(8) +
-            self.memory[RESET_VECTOR as usize] as u16
+            (self.memory[RESET_VECTOR as usize + 1] as u16).wrapping_shl(8)
+                + self.memory[RESET_VECTOR as usize] as u16,
         );
     }
 
@@ -82,44 +84,42 @@ impl Processor {
     fn fetch(&mut self) -> Result<(Opcode, Operand), Box<dyn Error>> {
         let opcode = self.next().unwrap();
         let mut operand = Vec::new();
+
+        // Handle exceptional cases
         match opcode {
-            0x18 => {},         // CLC
-            0xD8 => {},         // CLD
-            0x58 => {},         // CLI
-            0xCA => {},         // DEX
-            0x88 => {},         // DEY
-            0xE8 => {},         // INX
-            0xC8 => {},         // INY
-            0xA9 => {           // LDA #
+            0x40 | 0x60 => return Ok((opcode, operand)),
+            0x20 | 0xA0 | 0xC0 | 0xE0 => {
+                operand.push(self.next().unwrap());
+                return Ok((opcode, operand))
+            },
+            _ => {},    // pass through to next set of cases
+        };
+
+        // Handle the happy cases
+        match opcode & ADDRESS_MODE_MASK {
+            0b0000_0000 | 0b0000_0100 | 0b0001_0000 |  0b0001_0100 => {
+                operand.push(self.next().unwrap());
+            },
+            0b0000_1100 | 0b0001_1100 => {
                 operand.push(self.next().unwrap());
                 operand.push(self.next().unwrap());
             },
-            0xEA => {},         // NOP
-            0x38 => {},         // SEC
-            0xF8 => {},         // SED
-            0xDB => {},         // STP
-            0xAA => {},         // TAX
-            0xA8 => {},         // TAY
-            0xBA => {},         // TSX
-            0x8A => {},         // TXA
-            0x9A => {},         // TXS
-            0x98 => {},         // TYA
-            0xCB => {},         // WAI
-            _ => panic!("Unknown opcode {}", opcode),
-        }
+            _ => {},    // 1 byte opcodes
+        };
         Ok((opcode, operand))
     }
 
     // Execute the given opcode
     fn execute(&mut self, opcode: Opcode, operand: Operand) -> Option<()> {
         match opcode {
-            0xA9 => {           // LDA #
+            0xAD => {
+                // LDA #
                 let value = self.get_memory_value(bytes_to_u16(operand));
                 self.set_a(value);
                 Some(())
-            },
-            0xDB => None,       // STP
-            0xEA => Some(()),   // NOP
+            }
+            0xDB => None,     // STP
+            0xEA => Some(()), // NOP
             _ => panic!("Unknown opcode {}", opcode),
         }
     }
@@ -140,7 +140,7 @@ impl Iterator for Processor {
 
     fn next(&mut self) -> Option<u8> {
         let val = self.get_memory_value(self.pc);
-        self.increment_pc();        
+        self.increment_pc();
         Some(val)
     }
 }
@@ -153,11 +153,11 @@ pub fn run() -> Result<(), Box<dyn Error>> {
 
 #[cfg(test)]
 mod tests {
+    use super::bytes_to_u16;
     use super::Processor;
-    use super::RESET_VECTOR;
     use super::DECIMAL_MODE;
     use super::INTERRUPT_DISABLE;
-    use super::bytes_to_u16;
+    use super::RESET_VECTOR;
 
     #[test]
     fn test_default_processor() {
@@ -226,9 +226,9 @@ mod tests {
         let mut p = Processor::new();
         p.memory[0xFFFC] = 0x34;
         p.memory[0xFFFD] = 0x12;
-        p.memory[0x1234] = 0xEA;    // NOP
-        p.memory[0x1235] = 0xEA;    // NOP
-        p.memory[0x1236] = 0xDB;    // STP
+        p.memory[0x1234] = 0xEA; // NOP
+        p.memory[0x1235] = 0xEA; // NOP
+        p.memory[0x1236] = 0xDB; // STP
         p.reset();
         assert_eq!(p.next().unwrap(), 0xEA);
         assert_eq!(p.next().unwrap(), 0xEA);
@@ -241,11 +241,11 @@ mod tests {
         let mut p = Processor::new();
         p.memory[0xFFFC] = 0x34;
         p.memory[0xFFFD] = 0x12;
-        p.memory[0x1234] = 0xEA;    // NOP
-        p.memory[0x1235] = 0xDB;    // STP
-        p.memory[0x1236] = 0xA9;    // LDA #
-        p.memory[0x1237] = 0x34;    // Lo byte
-        p.memory[0x1238] = 0x12;    // Hi byte
+        p.memory[0x1234] = 0xEA; // NOP
+        p.memory[0x1235] = 0xDB; // STP
+        p.memory[0x1236] = 0xA9; // LDA #
+        p.memory[0x1237] = 0x34; // Lo byte
+        p.memory[0x1238] = 0x12; // Hi byte
         p.reset();
         let a = p.a;
         let x = p.x;
@@ -271,11 +271,11 @@ mod tests {
         let mut p = Processor::new();
         p.memory[0xFFFC] = 0x34;
         p.memory[0xFFFD] = 0x12;
-        p.memory[0x1234] = 0xEA;    // NOP
-        p.memory[0x1235] = 0xDB;    // STP
-        p.memory[0x1236] = 0xA9;    // LDA #
-        p.memory[0x1237] = 0x34;    // Lo byte
-        p.memory[0x1238] = 0x12;    // Hi byte
+        p.memory[0x1234] = 0xEA; // NOP
+        p.memory[0x1235] = 0xDB; // STP
+        p.memory[0x1236] = 0xAD; // LDA $
+        p.memory[0x1237] = 0x34; // Lo byte
+        p.memory[0x1238] = 0x12; // Hi byte
         p.reset();
         let (opcode, operand) = p.fetch().unwrap();
         assert_eq!(opcode, 0xEA);
@@ -284,7 +284,7 @@ mod tests {
         assert_eq!(opcode, 0xDB);
         assert_eq!(operand.len(), 0);
         let (opcode, operand) = p.fetch().unwrap();
-        assert_eq!(opcode, 0xA9);
+        assert_eq!(opcode, 0xAD);
         assert_eq!(operand[0], 0x34);
         assert_eq!(operand[1], 0x12);
         assert_eq!(p.pc, 0x1239);
@@ -295,14 +295,14 @@ mod tests {
         let mut p = Processor::new();
         p.memory[0xFFFC] = 0x34;
         p.memory[0xFFFD] = 0x12;
-        p.memory[0x1234] = 0xA9;    // LDA #
-        p.memory[0x1235] = 0x34;    // Lo byte
-        p.memory[0x1236] = 0x12;    // Hi byte
-        p.memory[0x1237] = 0xEA;    // NOP
+        p.memory[0x1234] = 0xAD; // LDA #
+        p.memory[0x1235] = 0x34; // Lo byte
+        p.memory[0x1236] = 0x12; // Hi byte
+        p.memory[0x1237] = 0xEA; // NOP
         p.reset();
         let (opcode, operand) = p.fetch().unwrap();
         p.execute(opcode, operand);
-        assert_eq!(p.a, 0xA9);  // We're loading the value at 0x1234 into A
+        assert_eq!(p.a, 0xAD); // We're loading the value at 0x1234 into A
         let (opcode, operand) = p.fetch().unwrap();
         assert_eq!(opcode, 0xEA);
         assert_eq!(operand.len(), 0);
