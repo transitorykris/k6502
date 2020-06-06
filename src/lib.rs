@@ -299,7 +299,17 @@ impl Processor {
                 self.set_a(value);
                 Some(())
             },
-            0xA1 => {Some(())},
+            0xA1 => {
+                let x = self.get_x();
+                let table_address = operand[0].overflowing_add(x).0;
+                let address = vec![
+                    self.get_memory_value(table_address as u16),
+                    self.get_memory_value((table_address+1) as u16)
+                ];
+                let value = self.get_memory_value(bytes_to_u16(address));
+                self.set_a(value);
+                Some(())
+            },
             0xB1 => {Some(())},
 
             // LDX
@@ -683,5 +693,15 @@ mod tests {
         let (opcode, operand) = p.fetch().unwrap();
         p.execute(opcode, operand);
         assert_eq!(p.a, 0x89);
+
+        p.memory[0x0010] = 0x78; // LDA (zp,x)
+        p.memory[0x0011] = 0x56;
+        p.memory[0x5678] = 0x9A;
+        p.memory[0x1245] = 0xA1;
+        p.memory[0x1246] = 0x0F;
+        p.set_x(0x01);
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.a, 0x9A);
     }
 }
