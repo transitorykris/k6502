@@ -310,7 +310,17 @@ impl Processor {
                 self.set_a(value);
                 Some(())
             },
-            0xB1 => {Some(())},
+            0xB1 => {
+                let y = self.get_y();
+                let base_address = vec![
+                    self.get_memory_value(operand[0] as u16),
+                    self.get_memory_value((operand[0] + 1) as u16)
+                ];
+                let address = bytes_to_u16(base_address) + y as u16;
+                let value = self.get_memory_value(address);
+                self.set_a(value);
+                Some(())
+            },
 
             // LDX
             0xA2 => {Some(())},
@@ -676,7 +686,7 @@ mod tests {
         p.execute(opcode, operand);
         assert_eq!(p.a, 0x78);
 
-        p.memory[0x1005] = 0x87; // LDA $,x
+        p.memory[0x1005] = 0x87; // LDA $,X
         p.memory[0x123F] = 0xBD;
         p.memory[0x1240] = 0x00;
         p.memory[0x1241] = 0x10;
@@ -685,7 +695,7 @@ mod tests {
         p.execute(opcode, operand);
         assert_eq!(p.a, 0x87);
 
-        p.memory[0x1005] = 0x89; // LDA $,y
+        p.memory[0x1005] = 0x89; // LDA $,Y
         p.memory[0x1242] = 0xB9;
         p.memory[0x1243] = 0x00;
         p.memory[0x1244] = 0x10;
@@ -694,7 +704,7 @@ mod tests {
         p.execute(opcode, operand);
         assert_eq!(p.a, 0x89);
 
-        p.memory[0x0010] = 0x78; // LDA (zp,x)
+        p.memory[0x0010] = 0x78; // LDA (zp,X)
         p.memory[0x0011] = 0x56;
         p.memory[0x5678] = 0x9A;
         p.memory[0x1245] = 0xA1;
@@ -703,5 +713,15 @@ mod tests {
         let (opcode, operand) = p.fetch().unwrap();
         p.execute(opcode, operand);
         assert_eq!(p.a, 0x9A);
+
+        p.memory[0x000F] = 0x89; // LDA (zp),Y
+        p.memory[0x0010] = 0x67;
+        p.memory[0x678A] = 0xAB;
+        p.memory[0x1247] = 0xB1;
+        p.memory[0x1248] = 0x0F;
+        p.set_y(0x01);
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.a, 0xAB);
     }
 }
