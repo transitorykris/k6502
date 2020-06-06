@@ -279,8 +279,9 @@ impl Processor {
                 Some(())
             },
             0xB5 => {
-                let x = self.get_x() as u16;
-                let value = self.get_memory_value(bytes_to_u16(operand).overflowing_add(x).0);
+                let x = self.get_x();
+                let address = operand[0].overflowing_add(x).0 as u16;
+                let value = self.get_memory_value(address);
                 self.set_a(value);
                 Some(())
             },
@@ -650,14 +651,21 @@ mod tests {
         let (opcode, operand) = p.fetch().unwrap();
         p.execute(opcode, operand);
         assert_eq!(p.a, 0x67);
-
-        p.memory[0x1005] = 0x78; // LDA $,x
-        p.memory[0x123D] = 0xBD;
-        p.memory[0x123E] = 0x00;
-        p.memory[0x123F] = 0x10;
-        p.set_x(0x05);
+        p.memory[0x0000] = 0x78; // LDA zp,X
+        p.memory[0x123D] = 0xB5;
+        p.memory[0x123E] = 0xFF;
+        p.set_x(0x01);
         let (opcode, operand) = p.fetch().unwrap();
         p.execute(opcode, operand);
         assert_eq!(p.a, 0x78);
+
+        p.memory[0x1005] = 0x87; // LDA $,x
+        p.memory[0x123F] = 0xBD;
+        p.memory[0x1240] = 0x00;
+        p.memory[0x1241] = 0x10;
+        p.set_x(0x05);
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.a, 0x87);
     }
 }
