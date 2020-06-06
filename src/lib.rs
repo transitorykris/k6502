@@ -105,6 +105,97 @@ impl Processor {
         self.y
     }
 
+    // Manipulate processor status flags
+    fn set_negative(&mut self) {
+        self.p |= NEGATIVE_FLAG;
+    }
+
+    fn clear_negative(&mut self) {
+        self.p &= !NEGATIVE_FLAG;
+    }
+
+    fn is_negative(&mut self) -> bool {
+        if self.p & NEGATIVE_FLAG == NEGATIVE_FLAG {
+            return true
+        }
+        false
+    }
+
+    fn set_overflow(&mut self) {
+        self.p |= OVERFLOW_FLAG;
+    }
+
+    fn clear_overflow(&mut self) {
+        self.p &= !OVERFLOW_FLAG;
+    }
+
+    fn is_overflow(&mut self) -> bool {
+        if self.p & OVERFLOW_FLAG == OVERFLOW_FLAG {
+            return true
+        }
+        false
+    }
+
+    fn set_brk(&mut self) {
+        self.p |= BRK_FLAG;
+    }
+
+    fn clear_brk(&mut self) {
+        self.p &= !BRK_FLAG;
+    }
+
+    fn is_brk(&mut self) -> bool {
+        if self.p & BRK_FLAG == BRK_FLAG {
+            return true
+        }
+        false
+    }
+
+    fn set_decimal(&mut self) {
+        self.p |= DECIMAL_MODE;
+    }
+
+    fn clear_decimal(&mut self) {
+        self.p &= !DECIMAL_MODE;
+    }
+
+    fn is_decimal(&mut self) -> bool {
+        if self.p & DECIMAL_MODE == DECIMAL_MODE {
+            return true
+        }
+        false
+    }
+
+    fn set_zero(&mut self) {
+        self.p |= ZERO_FLAG;
+    }
+
+    fn clear_zero(&mut self) {
+        self.p &= !ZERO_FLAG;
+    }
+
+    fn is_zero(&mut self) -> bool {
+        if self.p & ZERO_FLAG == ZERO_FLAG {
+            return true
+        }
+        false
+    }
+
+    fn set_carry(&mut self) {
+        self.p |= CARRY_FLAG;
+    }
+
+    fn clear_carry(&mut self) {
+        self.p &= !CARRY_FLAG;
+    }
+    
+    fn is_carry(&mut self) -> bool {
+        if self.p & CARRY_FLAG == CARRY_FLAG {
+            return true
+        }
+        false
+    }
+
     // Fetches the next opcode and operand
     fn fetch(&mut self) -> Result<(Opcode, Operand), Box<dyn Error>> {
         let opcode = self.next().unwrap();
@@ -723,5 +814,124 @@ mod tests {
         let (opcode, operand) = p.fetch().unwrap();
         p.execute(opcode, operand);
         assert_eq!(p.a, 0xAB);
+    }
+
+    use super::BRK_FLAG;
+    use super::CARRY_FLAG;
+    use super::NEGATIVE_FLAG;
+    use super::OVERFLOW_FLAG;
+    use super::ZERO_FLAG;
+    #[test]
+    fn test_flag_functions() {
+        let mut p = Processor::new();
+
+        // BRK FLAG
+        p.p = 0b1111_1111 & !BRK_FLAG;
+        assert_eq!(p.is_brk(), false);
+        p.set_brk();
+        assert_eq!(p.is_brk(), true);
+        assert_eq!(p.p, 0b1111_1111);
+        p.clear_brk();
+        assert_eq!(p.is_brk(), false);
+        assert_eq!(p.p, 0b1111_1111 & !BRK_FLAG);
+
+        p.p = 0b0000_0000;
+        assert_eq!(p.is_brk(), false);
+        p.set_brk();
+        assert_eq!(p.is_brk(), true);
+        assert_eq!(p.p, 0b0000_0000 | BRK_FLAG);
+        p.clear_brk();
+        assert_eq!(p.is_brk(), false);
+        assert_eq!(p.p, 0b0000_0000);
+
+        // CARRY FLAG
+        p.p = 0b1111_1111 & !CARRY_FLAG;
+        assert_eq!(p.is_carry(), false);
+        p.set_carry();
+        assert_eq!(p.is_carry(), true);
+        p.clear_carry();
+        assert_eq!(p.is_carry(), false);
+        assert_eq!(p.p, 0b1111_1111 & !CARRY_FLAG);
+
+        p.p = 0b0000_0000;
+        assert_eq!(p.is_carry(), false);
+        p.set_carry();
+        assert_eq!(p.is_carry(), true);
+        assert_eq!(p.p, 0b0000_0000 | CARRY_FLAG);
+        p.clear_carry();
+        assert_eq!(p.is_carry(), false);
+        assert_eq!(p.p, 0b0000_0000);
+
+        // DECIMAL FLAG
+        p.p = 0b1111_1111 & !DECIMAL_MODE;
+        assert_eq!(p.is_decimal(), false);
+        p.set_decimal();
+        assert_eq!(p.is_decimal(), true);
+        p.clear_decimal();
+        assert_eq!(p.is_decimal(), false);
+        assert_eq!(p.p, 0b1111_1111 & !DECIMAL_MODE);
+
+        p.p = 0b0000_0000;
+        assert_eq!(p.is_decimal(), false);
+        p.set_decimal();
+        assert_eq!(p.is_decimal(), true);
+        assert_eq!(p.p, 0b0000_0000 | DECIMAL_MODE);
+        p.clear_decimal();
+        assert_eq!(p.is_decimal(), false);
+        assert_eq!(p.p, 0b0000_0000);
+
+        // NEGATIVE FLAG
+        p.p = 0b1111_1111 & !NEGATIVE_FLAG;
+        assert_eq!(p.is_negative(), false);
+        p.set_negative();
+        assert_eq!(p.is_negative(), true);
+        p.clear_negative();
+        assert_eq!(p.is_negative(), false);
+        assert_eq!(p.p, 0b1111_1111 & !NEGATIVE_FLAG);
+
+        p.p = 0b0000_0000;
+        assert_eq!(p.is_overflow(), false);
+        p.set_overflow();
+        assert_eq!(p.is_overflow(), true);
+        assert_eq!(p.p, 0b0000_0000 | OVERFLOW_FLAG);
+        p.clear_overflow();
+        assert_eq!(p.is_overflow(), false);
+        assert_eq!(p.p, 0b0000_0000);
+
+        // OVERFLOW FLAG
+        p.p = 0b1111_1111 & !OVERFLOW_FLAG;
+        assert_eq!(p.is_overflow(), false);
+        p.set_overflow();
+        assert_eq!(p.is_overflow(), true);
+        p.clear_overflow();
+        assert_eq!(p.is_overflow(), false);
+        assert_eq!(p.p, 0b1111_1111 & !OVERFLOW_FLAG);
+
+        p.p = 0b0000_0000;
+        assert_eq!(p.is_overflow(), false);
+        p.set_overflow();
+        assert_eq!(p.is_overflow(), true);
+        assert_eq!(p.p, 0b0000_0000 | OVERFLOW_FLAG);
+        p.clear_overflow();
+        assert_eq!(p.is_overflow(), false);
+        assert_eq!(p.p, 0b0000_0000);
+
+        // ZERO FLAG
+        p.p = 0b1111_1111 & !ZERO_FLAG;
+        assert_eq!(p.is_zero(), false);
+        p.set_zero();
+        assert_eq!(p.is_zero(), true);
+        p.clear_zero();
+        assert_eq!(p.is_zero(), false);
+        assert_eq!(p.p, 0b1111_1111 & !ZERO_FLAG);
+    
+        p.p = 0b0000_0000;
+        assert_eq!(p.is_zero(), false);
+        p.set_zero();
+        assert_eq!(p.is_zero(), true);
+        assert_eq!(p.p, 0b0000_0000 | ZERO_FLAG);
+        p.clear_zero();
+        assert_eq!(p.is_zero(), false);
+        assert_eq!(p.p, 0b0000_0000);
     }
 }
