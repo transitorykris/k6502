@@ -80,6 +80,31 @@ impl Processor {
         self.a = value;
     }
 
+    // Set the value of the X register
+    fn set_x(&mut self, value: u8) {
+        self.x = value;
+    }
+
+    // Set the value of the Y register
+    fn set_y(&mut self, value: u8) {
+        self.y = value;
+    }
+
+    // Get the value of the A register
+    fn get_a(&mut self) -> u8 {
+        self.a
+    }
+
+    // Get the value of the X register
+    fn get_x(&mut self) -> u8 {
+        self.x
+    }
+
+    // Get the value of the Y register
+    fn get_y(&mut self) -> u8 {
+        self.y
+    }
+
     // Fetches the next opcode and operand
     fn fetch(&mut self) -> Result<(Opcode, Operand), Box<dyn Error>> {
         let opcode = self.next().unwrap();
@@ -87,7 +112,7 @@ impl Processor {
 
         // Handle exceptional cases
         match opcode {
-            0x40 | 0x60 => return Ok((opcode, operand)),
+            0x40 | 0x60 | 0xEA => return Ok((opcode, operand)),
             0x20 | 0xA0 | 0xC0 | 0xE0 => {
                 operand.push(self.next().unwrap());
                 return Ok((opcode, operand))
@@ -253,8 +278,18 @@ impl Processor {
                 self.set_a(value);
                 Some(())
             },
-            0xB5 => {Some(())},
-            0xBD => {Some(())},
+            0xB5 => {
+                let x = self.get_x() as u16;
+                let value = self.get_memory_value(bytes_to_u16(operand).overflowing_add(x).0);
+                self.set_a(value);
+                Some(())
+            },
+            0xBD => {
+                let x = self.get_x() as u16;
+                let value = self.get_memory_value(bytes_to_u16(operand).overflowing_add(x).0);
+                self.set_a(value);
+                Some(())
+            },
             0xB9 => {Some(())},
             0xA1 => {Some(())},
             0xB1 => {Some(())},
@@ -390,7 +425,7 @@ impl Processor {
 // Returns a u16 of the first two little endian bytes
 fn bytes_to_u16(bytes: Vec<u8>) -> u16 {
     if bytes.len() == 1 {
-        return bytes[0] as u16;
+        bytes[0] as u16
     } else {
         (bytes[1] as u16).wrapping_shl(8) + bytes[0] as u16
     }
@@ -607,5 +642,22 @@ mod tests {
         let (opcode, operand) = p.fetch().unwrap();
         p.execute(opcode, operand);
         assert_eq!(p.a, 0x56);
+
+        p.memory[0x001A] = 0x67; // LDA zp,X
+        p.memory[0x123B] = 0xB5;
+        p.memory[0x123C] = 0x10;
+        p.set_x(0x0A);
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.a, 0x67);
+
+        p.memory[0x1005] = 0x78; // LDA $,x
+        p.memory[0x123D] = 0xBD;
+        p.memory[0x123E] = 0x00;
+        p.memory[0x123F] = 0x10;
+        p.set_x(0x05);
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.a, 0x78);
     }
 }
