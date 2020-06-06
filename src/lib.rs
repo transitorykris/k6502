@@ -112,7 +112,7 @@ impl Processor {
 
         // Handle exceptional cases
         match opcode {
-            0x40 | 0x60 | 0xEA => return Ok((opcode, operand)),
+            0x40 | 0x60 | 0xDB | 0xEA => return Ok((opcode, operand)),
             0x20 | 0xA0 | 0xC0 | 0xE0 => {
                 operand.push(self.next().unwrap());
                 return Ok((opcode, operand))
@@ -125,7 +125,7 @@ impl Processor {
             0b0000_0000 | 0b0000_0100 | 0b0000_1000 | 0b0001_0000 |  0b0001_0100 => {
                 operand.push(self.next().unwrap());
             },
-            0b0000_1100 | 0b0001_1100 => {
+            0b0000_1100 | 0b0001_1000 | 0b0001_1100 => {
                 operand.push(self.next().unwrap());
                 operand.push(self.next().unwrap());
             },
@@ -287,11 +287,18 @@ impl Processor {
             },
             0xBD => {
                 let x = self.get_x() as u16;
-                let value = self.get_memory_value(bytes_to_u16(operand).overflowing_add(x).0);
+                let address = bytes_to_u16(operand).overflowing_add(x).0;
+                let value = self.get_memory_value(address);
                 self.set_a(value);
                 Some(())
             },
-            0xB9 => {Some(())},
+            0xB9 => {            
+                let y = self.get_y() as u16;
+                let address = bytes_to_u16(operand).overflowing_add(y).0;
+                let value = self.get_memory_value(address);
+                self.set_a(value);
+                Some(())
+            },
             0xA1 => {Some(())},
             0xB1 => {Some(())},
 
@@ -667,5 +674,14 @@ mod tests {
         let (opcode, operand) = p.fetch().unwrap();
         p.execute(opcode, operand);
         assert_eq!(p.a, 0x87);
+
+        p.memory[0x1005] = 0x89; // LDA $,y
+        p.memory[0x1242] = 0xB9;
+        p.memory[0x1243] = 0x00;
+        p.memory[0x1244] = 0x10;
+        p.set_y(0x05);
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.a, 0x89);
     }
 }
