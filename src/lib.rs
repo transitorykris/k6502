@@ -97,7 +97,7 @@ impl Processor {
 
         // Handle the happy cases
         match opcode & ADDRESS_MODE_MASK {
-            0b0000_0000 | 0b0000_0100 | 0b0001_0000 |  0b0001_0100 => {
+            0b0000_0000 | 0b0000_0100 | 0b0000_1000 | 0b0001_0000 |  0b0001_0100 => {
                 operand.push(self.next().unwrap());
             },
             0b0000_1100 | 0b0001_1100 => {
@@ -112,14 +112,271 @@ impl Processor {
     // Execute the given opcode
     fn execute(&mut self, opcode: Opcode, operand: Operand) -> Option<()> {
         match opcode {
-            0xAD => {
-                // LDA #
+            // ADC
+            0x69 => {Some(())},
+            0x65 => {Some(())},
+            0x75 => {Some(())},
+            0x6D => {Some(())},
+            0x7D => {Some(())},
+            0x79 => {Some(())},
+            0x61 => {Some(())},
+            0x71 => {Some(())},
+
+            // AND
+            0x29 => {Some(())},
+            0x25 => {Some(())},
+            0x35 => {Some(())},
+            0x2D => {Some(())},
+            0x3D => {Some(())},
+            0x39 => {Some(())},
+            0x21 => {Some(())},
+            0x31 => {Some(())},
+
+            // ASL
+            0x0A => {Some(())},
+            0x06 => {Some(())},
+            0x16 => {Some(())},
+            0x0E => {Some(())},
+            0x1E => {Some(())},
+
+            // BCC
+            0x90 => {Some(())},
+
+            // BCS
+            0xB0 => {Some(())},
+
+            // BEQ
+            0xF0 => {Some(())},
+
+            // BIT
+            0x24 => {Some(())},
+            0x2C => {Some(())},
+
+            // BMI
+            0x30 => {Some(())},
+
+            // BNE
+            0xD0 => {Some(())},
+
+            // BPL
+            0x10 => {Some(())},
+
+            // BRK
+            0x00 => {Some(())},
+
+            // BVC
+            0x50 => {Some(())},
+
+            // BVS
+            0x70 => {Some(())},
+
+            // CLC
+            0x18 => {Some(())},
+
+            // CLD
+            0xD8 => {Some(())},
+
+            // CLI
+            0x58 => {Some(())},
+
+            // CLV
+            0xB8 => {Some(())},
+
+            // CMP
+            0xC9 => {Some(())},
+            0xC5 => {Some(())},
+            0xD5 => {Some(())},
+            0xCD => {Some(())},
+            0xDD => {Some(())},
+            0xD9 => {Some(())},
+            0xC1 => {Some(())},
+            0xD1 => {Some(())},
+
+            // CPX
+            0xE0 => {Some(())},
+            0xE4 => {Some(())},
+            0xEC => {Some(())},
+
+            // CPY
+            0xC0 => {Some(())},
+            0xC4 => {Some(())},
+            0xCC => {Some(())},
+
+            // DEC
+            0xC6 => {Some(())},
+            0xD6 => {Some(())},
+            0xCE => {Some(())},
+            0xDE => {Some(())},
+
+            // DEX
+            0xCA => {Some(())},
+
+            // DEY
+            0x88 => {Some(())},
+
+            // EOR
+            0x49 => {Some(())},
+            0x45 => {Some(())},
+            0x55 => {Some(())},
+            0x4D => {Some(())},
+            0x5D => {Some(())},
+            0x59 => {Some(())},
+            0x41 => {Some(())},
+            0x51 => {Some(())},
+
+            // INC
+            0xE6 => {Some(())},
+            0xF6 => {Some(())},
+            0xEE => {Some(())},
+            0xFE => {Some(())},
+
+            // INX
+            0xE8 => {Some(())},
+
+            // INY
+            0xC8 => {Some(())},
+
+            // JMP
+            0x4C => {Some(())},
+            0x6C => {Some(())},
+
+            // JSR
+            0x20 => {Some(())},
+
+            // LDA
+            0xA9 => {
+                self.set_a(operand[0]);
+                Some(())
+            },
+            0xA5 | 0xAD => {
                 let value = self.get_memory_value(bytes_to_u16(operand));
                 self.set_a(value);
                 Some(())
-            }
-            0xDB => None,     // STP
-            0xEA => Some(()), // NOP
+            },
+            0xB5 => {Some(())},
+            0xBD => {Some(())},
+            0xB9 => {Some(())},
+            0xA1 => {Some(())},
+            0xB1 => {Some(())},
+
+            // LDX
+            0xA2 => {Some(())},
+            0xA6 => {Some(())},
+            0xB6 => {Some(())},
+            0xAE => {Some(())},
+            0xBE => {Some(())},
+
+            // LSR
+            0xA0 => {Some(())},
+            0xA4 => {Some(())},
+            0xB4 => {Some(())},
+            0xAC => {Some(())},
+            0xBC => {Some(())},
+
+            // NOP
+            0xEA => Some(()),
+
+            // ORA
+            0x09 => {Some(())},
+            0x05 => {Some(())},
+            0x15 => {Some(())},
+            0x0D => {Some(())},
+            0x1D => {Some(())},
+            0x19 => {Some(())},
+            0x01 => {Some(())},
+            0x11 => {Some(())},
+
+            // PHA
+            0x48 => {Some(())},
+
+            // PHP
+            0x08 => {Some(())},
+
+            // PLA
+            0x68 => {Some(())},
+
+            // PLP
+            0x28 => {Some(())},
+
+            // ROL
+            0x2A => {Some(())},
+            0x26 => {Some(())},
+            0x36 => {Some(())},
+            0x2E => {Some(())},
+            0x3E => {Some(())},
+
+            // ROR
+            0x6A => {Some(())},
+            0x66 => {Some(())},
+            0x76 => {Some(())},
+            0x6E => {Some(())},
+            0x7E => {Some(())},
+
+            // RTI
+            0x40 => {Some(())},
+
+            // RTS
+            0x60 => {Some(())},
+
+            // SBC
+            0xE9 => {Some(())},
+            0xE5 => {Some(())},
+            0xF5 => {Some(())},
+            0xED => {Some(())},
+            0xFD => {Some(())},
+            0xF9 => {Some(())},
+            0xE1 => {Some(())},
+            0xF1 => {Some(())},
+
+            // SEC
+            0x38 => {Some(())},
+
+            // SED
+            0xF8 => {Some(())},
+
+            // SEI
+            0x78 => {Some(())},
+
+            // STA
+            0x85 => {Some(())},
+            0x95 => {Some(())},
+            0x8D => {Some(())},
+            0x9D => {Some(())},
+            0x99 => {Some(())},
+            0x81 => {Some(())},
+            0x91 => {Some(())},
+
+            // STP (WDC 65c02)
+            0xDB => None,
+
+            // STX
+            0x86 => {Some(())},
+            0x96 => {Some(())},
+            0x8E => {Some(())},
+
+            // STY
+            0x84 => {Some(())},
+            0x94 => {Some(())},
+            0x8C => {Some(())},
+
+            // TAX
+            0xAA => {Some(())},
+
+            // TAY
+            0xA8 => {Some(())},
+
+            // TSX
+            0xBA => {Some(())},
+
+            // TXA
+            0x8A => {Some(())},
+
+            // TXS
+            0x9A => {Some(())},
+
+            // TYA
+            0x98 => {Some(())},
+
             _ => panic!("Unknown opcode {}", opcode),
         }
     }
@@ -132,7 +389,11 @@ impl Processor {
 
 // Returns a u16 of the first two little endian bytes
 fn bytes_to_u16(bytes: Vec<u8>) -> u16 {
-    (bytes[1] as u16).wrapping_shl(8) + bytes[0] as u16
+    if bytes.len() == 1 {
+        return bytes[0] as u16;
+    } else {
+        (bytes[1] as u16).wrapping_shl(8) + bytes[0] as u16
+    }
 }
 
 impl Iterator for Processor {
@@ -310,6 +571,7 @@ mod tests {
 
     #[test]
     fn test_bytes_to_u16() {
+        assert_eq!(bytes_to_u16(vec![0xAB]), 0xAB);
         assert_eq!(bytes_to_u16(vec![0x34, 0x12]), 0x1234);
     }
 
@@ -318,5 +580,32 @@ mod tests {
         let mut p = Processor::new();
         p.memory[0x1234] = 0xAB;
         assert_eq!(p.get_memory_value(0x1234), 0xAB);
+    }
+
+    #[test]
+    fn test_lda() {
+        let mut p = Processor::new();
+        p.memory[0xFFFC] = 0x34;
+        p.memory[0xFFFD] = 0x12;
+        p.memory[0x1234] = 0xAD; // LDA $
+        p.memory[0x1235] = 0x34; // Lo byte
+        p.memory[0x1236] = 0x12; // Hi byte
+        p.reset();
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.a, 0xAD); // We're loading the value at 0x1234 into A
+
+        p.memory[0x1237] = 0xA9; // LDA #
+        p.memory[0x1238] = 0xDE;
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.a, 0xDE);
+
+        p.memory[0x0001] = 0x56; // LDA zp
+        p.memory[0x1239] = 0xA5;
+        p.memory[0x123A] = 0x01;
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.a, 0x56);
     }
 }
