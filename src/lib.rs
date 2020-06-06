@@ -166,6 +166,21 @@ impl Processor {
         false
     }
 
+    fn set_interrupt_disable(&mut self) {
+        self.p |= INTERRUPT_DISABLE;
+    }
+
+    fn clear_interrupt_disable(&mut self) {
+        self.p &= !INTERRUPT_DISABLE;
+    }
+
+    fn is_interrupt_disable(&mut self) -> bool {
+        if self.p & INTERRUPT_DISABLE == INTERRUPT_DISABLE {
+            return true
+        }
+        false
+    }
+
     fn set_zero(&mut self) {
         self.p |= ZERO_FLAG;
     }
@@ -208,6 +223,11 @@ impl Processor {
                 operand.push(self.next().unwrap());
                 return Ok((opcode, operand))
             },
+            0xB9 => {
+                operand.push(self.next().unwrap());
+                operand.push(self.next().unwrap());
+                return Ok((opcode, operand))
+            },
             _ => {},    // pass through to next set of cases
         };
 
@@ -216,7 +236,7 @@ impl Processor {
             0b0000_0000 | 0b0000_0100 | 0b0000_1000 | 0b0001_0000 |  0b0001_0100 => {
                 operand.push(self.next().unwrap());
             },
-            0b0000_1100 | 0b0001_1000 | 0b0001_1100 => {
+            0b0000_1100 | 0b0001_1100 => {
                 operand.push(self.next().unwrap());
                 operand.push(self.next().unwrap());
             },
@@ -287,16 +307,28 @@ impl Processor {
             0x70 => {Some(())},
 
             // CLC
-            0x18 => {Some(())},
+            0x18 => {
+                self.clear_carry();
+                Some(())
+            },
 
             // CLD
-            0xD8 => {Some(())},
+            0xD8 => {
+                self.clear_decimal();
+                Some(())
+            },
 
             // CLI
-            0x58 => {Some(())},
+            0x58 => {
+                self.clear_interrupt_disable();
+                Some(())
+            },
 
             // CLV
-            0xB8 => {Some(())},
+            0xB8 => {
+                self.clear_overflow();
+                Some(())
+            },
 
             // CMP
             0xC9 => {Some(())},
@@ -483,13 +515,22 @@ impl Processor {
             0xF1 => {Some(())},
 
             // SEC
-            0x38 => {Some(())},
+            0x38 => {
+                self.set_carry();
+                Some(())
+            },
 
             // SED
-            0xF8 => {Some(())},
+            0xF8 => {
+                self.set_decimal();
+                Some(())
+            },
 
             // SEI
-            0x78 => {Some(())},
+            0x78 => {
+                self.set_interrupt_disable();
+                Some(())
+            },
 
             // STA
             0x85 => {Some(())},
@@ -880,6 +921,24 @@ mod tests {
         assert_eq!(p.is_decimal(), false);
         assert_eq!(p.p, 0b0000_0000);
 
+        // INTERRUPT DISABLE FLAG
+        p.p = 0b1111_1111 & !INTERRUPT_DISABLE;
+        assert_eq!(p.is_interrupt_disable(), false);
+        p.set_interrupt_disable();
+        assert_eq!(p.is_interrupt_disable(), true);
+        p.clear_interrupt_disable();
+        assert_eq!(p.is_interrupt_disable(), false);
+        assert_eq!(p.p, 0b1111_1111 & !INTERRUPT_DISABLE);
+
+        p.p = 0b0000_0000;
+        assert_eq!(p.is_interrupt_disable(), false);
+        p.set_interrupt_disable();
+        assert_eq!(p.is_interrupt_disable(), true);
+        assert_eq!(p.p, 0b0000_0000 | INTERRUPT_DISABLE);
+        p.clear_interrupt_disable();
+        assert_eq!(p.is_interrupt_disable(), false);
+        assert_eq!(p.p, 0b0000_0000);
+
         // NEGATIVE FLAG
         p.p = 0b1111_1111 & !NEGATIVE_FLAG;
         assert_eq!(p.is_negative(), false);
@@ -933,5 +992,54 @@ mod tests {
         p.clear_zero();
         assert_eq!(p.is_zero(), false);
         assert_eq!(p.p, 0b0000_0000);
+    }
+
+    #[test]
+    fn test_set_clear_instructions() {
+        let mut p = Processor::new();
+        p.memory[0xFFFC] = 0x34;
+        p.memory[0xFFFD] = 0x12;
+        p.memory[0x1234] = 0x38; // SEC
+        p.memory[0x1235] = 0x18; // CLC
+        p.memory[0x1236] = 0xF8; // SED
+        p.memory[0x1237] = 0xD8; // CLD
+        p.memory[0x1238] = 0x78; // SEI
+        p.memory[0x1239] = 0x58; // CLI
+        p.memory[0x123A] = 0xB8; // CLV
+        p.reset();
+        p.p = 0b0000_0000;  // Note: 6th bit is normally statically 1
+
+        // CARRY
+        assert_eq!(p.p, 0b0000_0000);
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.p & CARRY_FLAG, CARRY_FLAG);
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.p, 0b0000_0000);
+
+        // DECIMAL
+        assert_eq!(p.p, 0b0000_0000);
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.p & DECIMAL_MODE, DECIMAL_MODE);
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.p, 0b0000_0000);
+
+        // INTERRUPT
+        assert_eq!(p.p, 0b0000_0000);
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.p | INTERRUPT_DISABLE, INTERRUPT_DISABLE);
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.p, 0b0000_0000);
+
+        // OVERFLOW
+        p.p &= OVERFLOW_FLAG;
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.p & !OVERFLOW_FLAG, 0b0000_0000);
     }
 }
