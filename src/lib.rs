@@ -121,6 +121,14 @@ impl Processor {
         false
     }
 
+    fn test_and_set_negative(&mut self, value: u8) -> bool {
+        if value & 0b1000_0000 == 0b1000_0000 {
+            self.set_negative();
+            return true
+        }
+        false
+    }
+
     fn set_overflow(&mut self) {
         self.p |= OVERFLOW_FLAG;
     }
@@ -196,6 +204,14 @@ impl Processor {
         false
     }
 
+    fn test_and_set_zero(&mut self, value: u8) -> bool {
+        if value == 0 {
+            self.set_zero();
+            return true
+        }
+        false
+    }
+
     fn set_carry(&mut self) {
         self.p |= CARRY_FLAG;
     }
@@ -218,7 +234,10 @@ impl Processor {
 
         // Handle exceptional cases
         match opcode {
-            0x40 | 0x60 | 0xDB | 0xEA | 0xE8 | 0xC8 => return Ok((opcode, operand)),
+            0xAA | 0xA8 | 0xBA | 0x8A | 0x9A | 0x98 |
+            0x40 | 0x60 | 0xDB | 0xEA | 0xE8 | 0xC8 => {
+                return Ok((opcode, operand))
+            }
             0x20 | 0xA0 | 0xC0 | 0xE0 => {
                 operand.push(self.next().unwrap());
                 return Ok((opcode, operand))
@@ -233,7 +252,8 @@ impl Processor {
 
         // Handle the happy cases
         match opcode & ADDRESS_MODE_MASK {
-            0b0000_0000 | 0b0000_0100 | 0b0000_1000 | 0b0001_0000 |  0b0001_0100 => {
+            0b0000_0000 | 0b0000_0100 | 0b0000_1000 | 0b0001_0000 |
+            0b0001_0100 => {
                 operand.push(self.next().unwrap());
             },
             0b0000_1100 | 0b0001_1100 => {
@@ -571,22 +591,69 @@ impl Processor {
             0x8C => {Some(())},
 
             // TAX
-            0xAA => {Some(())},
+            0xAA => {
+                let a = self.get_a();
+                self.set_x(a);
+                if self.x == 0 {
+                    self.set_zero();
+                } else if self.x & 0b1000_0000 == 0b1000_0000 {
+                    self.set_negative();
+                }
+                Some(())
+            },
 
             // TAY
-            0xA8 => {Some(())},
+            0xA8 => {
+                let a = self.get_a();
+                self.set_y(a);
+                if self.y == 0 {
+                    self.set_zero();
+                } else if self.y & 0b1000_0000 == 0b1000_0000 {
+                    self.set_negative();
+                }
+                Some(())
+            },
 
             // TSX
-            0xBA => {Some(())},
+            0xBA => {
+                self.set_x(self.sp);
+                if self.x == 0 {
+                    self.set_zero();
+                } else if self.x & 0b1000_0000 == 0b1000_0000 {
+                    self.set_negative();
+                }
+                Some(())
+            },
 
             // TXA
-            0x8A => {Some(())},
+            0x8A => {
+                let x = self.get_x();
+                self.set_a(x);
+                if self.a == 0 {
+                    self.set_zero();
+                } else if self.a & 0b1000_0000 == 0b1000_0000 {
+                    self.set_negative();
+                }
+                Some(())
+            },
 
             // TXS
-            0x9A => {Some(())},
+            0x9A => {
+                self.sp = self.get_x();
+                Some(())
+            },
 
             // TYA
-            0x98 => {Some(())},
+            0x98 => {
+                let a = self.get_a();
+                self.set_y(a);
+                if self.a == 0 {
+                    self.set_zero();
+                } else if self.a & 0b1000_0000 == 0b1000_0000 {
+                    self.set_negative();
+                }
+                Some(())
+            },
 
             _ => panic!("Unknown opcode {}", opcode),
         }
@@ -1109,5 +1176,66 @@ mod tests {
         let (opcode, operand) = p.fetch().unwrap();
         p.execute(opcode, operand);
         assert_eq!(p.p & NEGATIVE_FLAG, NEGATIVE_FLAG);
+    }
+
+    #[test]
+    fn test_transfer_instructions() {
+        let mut p = Processor::new();
+        p.memory[0xFFFC] = 0x34;
+        p.memory[0xFFFD] = 0x12;
+        p.memory[0x1234] = 0xAA;
+        p.memory[0x1235] = 0xA8;
+        p.memory[0x1236] = 0xBA;
+        p.memory[0x1237] = 0x8A;
+        p.memory[0x1238] = 0x9A;
+        p.memory[0x1239] = 0x98;
+        p.reset();
+
+        // TAX
+        p.set_a(0x12);
+        let (opcode, operand) = p.fetch().unwrap();
+        let operand_len = operand.len();
+        p.execute(opcode, operand);
+        assert_eq!(operand_len, 0);
+        assert_eq!(p.get_a(), p.get_x());
+
+        // TAY
+        let (opcode, operand) = p.fetch().unwrap();
+        let operand_len = operand.len();
+        p.execute(opcode, operand);
+        assert_eq!(operand_len, 0);
+        assert_eq!(p.get_a(), p.get_y());
+
+        // TSX
+        p.sp = 0x34;
+        let (opcode, operand) = p.fetch().unwrap();
+        let operand_len = operand.len();
+        p.execute(opcode, operand);
+        assert_eq!(operand_len, 0);
+        assert_eq!(p.get_x(), p.sp);
+
+        // TXA
+        p.set_x(0x34);
+        let (opcode, operand) = p.fetch().unwrap();
+        let operand_len = operand.len();
+        p.execute(opcode, operand);
+        assert_eq!(operand_len, 0);
+        assert_eq!(p.get_a(), p.get_x());
+
+        // TXS
+        p.set_x(0x56);
+        let (opcode, operand) = p.fetch().unwrap();
+        let operand_len = operand.len();
+        p.execute(opcode, operand);
+        assert_eq!(operand_len, 0);
+        assert_eq!(p.get_x(), p.sp);
+
+        // TYA
+        p.set_y(0x78);
+        let (opcode, operand) = p.fetch().unwrap();
+        let operand_len = operand.len();
+        p.execute(opcode, operand);
+        assert_eq!(operand_len, 0);
+        assert_eq!(p.get_y(), p.get_a());
     }
 }
