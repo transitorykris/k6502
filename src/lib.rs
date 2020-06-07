@@ -218,7 +218,7 @@ impl Processor {
 
         // Handle exceptional cases
         match opcode {
-            0x40 | 0x60 | 0xDB | 0xEA => return Ok((opcode, operand)),
+            0x40 | 0x60 | 0xDB | 0xEA | 0xE8 | 0xC8 => return Ok((opcode, operand)),
             0x20 | 0xA0 | 0xC0 | 0xE0 => {
                 operand.push(self.next().unwrap());
                 return Ok((opcode, operand))
@@ -379,10 +379,26 @@ impl Processor {
             0xFE => {Some(())},
 
             // INX
-            0xE8 => {Some(())},
+            0xE8 => {
+                self.x = self.x.overflowing_add(1).0;
+                if self.x == 0 {
+                    self.set_overflow();
+                } else if self.x & 0b1000_0000 == 0b1000_0000 {
+                    self.set_negative();
+                }
+                Some(())
+            },
 
             // INY
-            0xC8 => {Some(())},
+            0xC8 => {
+                self.y = self.y.overflowing_add(1).0;
+                if self.y == 0 {
+                    self.set_overflow();
+                } else if self.y & 0b1000_0000 == 0b1000_0000 {
+                    self.set_negative();
+                }
+                Some(())
+            },
 
             // JMP
             0x4C => {Some(())},
@@ -1041,5 +1057,57 @@ mod tests {
         let (opcode, operand) = p.fetch().unwrap();
         p.execute(opcode, operand);
         assert_eq!(p.p & !OVERFLOW_FLAG, 0b0000_0000);
+    }
+
+    #[test]
+    fn test_inx_iny() {
+        let mut p = Processor::new();
+        p.memory[0xFFFC] = 0x34;
+        p.memory[0xFFFD] = 0x12;
+        p.memory[0x1234] = 0xE8;
+        p.memory[0x1235] = 0xE8;
+        p.memory[0x1236] = 0xE8;
+        p.memory[0x1237] = 0xC8;
+        p.memory[0x1238] = 0xC8;
+        p.memory[0x1239] = 0xC8;
+        p.reset();
+
+        let flags = p.p;
+        assert_eq!(p.get_x(), 0);
+        let (opcode, operand) = p.fetch().unwrap();
+        assert_eq!(operand.len(), 0);
+        p.execute(opcode, operand);
+        assert_eq!(p.get_x(), 1);
+        assert_eq!(p.p, flags);
+
+        p.set_x(0xFF);
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.get_x(), 0);
+        assert_eq!(p.p & OVERFLOW_FLAG, OVERFLOW_FLAG);
+
+        p.set_x(0x7F);
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.p & NEGATIVE_FLAG, NEGATIVE_FLAG);
+
+        let flags = p.p;
+        assert_eq!(p.get_y(), 0);
+        let (opcode, operand) = p.fetch().unwrap();
+        assert_eq!(operand.len(), 0);
+        p.execute(opcode, operand);
+        assert_eq!(p.get_y(), 1);
+        assert_eq!(p.p, flags);
+
+        p.set_y(0xFF);
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.get_y(), 0);
+        assert_eq!(p.p & OVERFLOW_FLAG, OVERFLOW_FLAG);
+
+        p.set_y(0x7F);
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.p & NEGATIVE_FLAG, NEGATIVE_FLAG);
     }
 }
