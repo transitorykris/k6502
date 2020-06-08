@@ -105,6 +105,16 @@ impl Processor {
         self.y
     }
 
+    // Set the stack pointer
+    fn set_sp(&mut self, sp: u8) {
+        self.sp = sp;
+    }
+
+    // Get the stack pointer
+    fn get_sp(&mut self) -> u8 {
+        self.sp
+    }
+
     // Manipulate processor status flags
     fn set_negative(&mut self) {
         self.p |= NEGATIVE_FLAG;
@@ -594,9 +604,9 @@ impl Processor {
             0xAA => {
                 let a = self.get_a();
                 self.set_x(a);
-                if self.x == 0 {
+                if self.get_x() == 0 {
                     self.set_zero();
-                } else if self.x & 0b1000_0000 == 0b1000_0000 {
+                } else if self.get_x() & 0b1000_0000 == 0b1000_0000 {
                     self.set_negative();
                 }
                 Some(())
@@ -606,9 +616,9 @@ impl Processor {
             0xA8 => {
                 let a = self.get_a();
                 self.set_y(a);
-                if self.y == 0 {
+                if self.get_y() == 0 {
                     self.set_zero();
-                } else if self.y & 0b1000_0000 == 0b1000_0000 {
+                } else if self.get_y() & 0b1000_0000 == 0b1000_0000 {
                     self.set_negative();
                 }
                 Some(())
@@ -616,10 +626,11 @@ impl Processor {
 
             // TSX
             0xBA => {
-                self.set_x(self.sp);
-                if self.x == 0 {
+                let sp = self.get_sp();
+                self.set_x(sp);
+                if self.get_x() == 0 {
                     self.set_zero();
-                } else if self.x & 0b1000_0000 == 0b1000_0000 {
+                } else if self.get_x() & 0b1000_0000 == 0b1000_0000 {
                     self.set_negative();
                 }
                 Some(())
@@ -629,9 +640,9 @@ impl Processor {
             0x8A => {
                 let x = self.get_x();
                 self.set_a(x);
-                if self.a == 0 {
+                if self.get_a() == 0 {
                     self.set_zero();
-                } else if self.a & 0b1000_0000 == 0b1000_0000 {
+                } else if self.get_a() & 0b1000_0000 == 0b1000_0000 {
                     self.set_negative();
                 }
                 Some(())
@@ -639,17 +650,18 @@ impl Processor {
 
             // TXS
             0x9A => {
-                self.sp = self.get_x();
+                let x = self.get_x();
+                self.set_sp(x);
                 Some(())
             },
 
             // TYA
             0x98 => {
-                let a = self.get_a();
-                self.set_y(a);
-                if self.a == 0 {
+                let y = self.get_y();
+                self.set_a(y);
+                if self.get_a() == 0 {
                     self.set_zero();
-                } else if self.a & 0b1000_0000 == 0b1000_0000 {
+                } else if self.get_a() & 0b1000_0000 == 0b1000_0000 {
                     self.set_negative();
                 }
                 Some(())
@@ -1184,11 +1196,21 @@ mod tests {
         p.memory[0xFFFC] = 0x34;
         p.memory[0xFFFD] = 0x12;
         p.memory[0x1234] = 0xAA;
-        p.memory[0x1235] = 0xA8;
-        p.memory[0x1236] = 0xBA;
-        p.memory[0x1237] = 0x8A;
-        p.memory[0x1238] = 0x9A;
-        p.memory[0x1239] = 0x98;
+        p.memory[0x1235] = 0xAA;
+        p.memory[0x1236] = 0xAA;
+        p.memory[0x1237] = 0xA8;
+        p.memory[0x1238] = 0xA8;
+        p.memory[0x1239] = 0xA8;
+        p.memory[0x123A] = 0xBA;
+        p.memory[0x123B] = 0xBA;
+        p.memory[0x123C] = 0xBA;
+        p.memory[0x123D] = 0x8A;
+        p.memory[0x123E] = 0x8A;
+        p.memory[0x123F] = 0x8A;
+        p.memory[0x1240] = 0x9A;
+        p.memory[0x1241] = 0x98;
+        p.memory[0x1242] = 0x98;
+        p.memory[0x1243] = 0x98;
         p.reset();
 
         // TAX
@@ -1199,12 +1221,36 @@ mod tests {
         assert_eq!(operand_len, 0);
         assert_eq!(p.get_a(), p.get_x());
 
+        p.set_a(0x00);
+        p.clear_zero();
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.is_zero(), true);
+
+        p.set_a(0b1000_0000);
+        p.clear_negative();
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.is_negative(), true);
+
         // TAY
         let (opcode, operand) = p.fetch().unwrap();
         let operand_len = operand.len();
         p.execute(opcode, operand);
         assert_eq!(operand_len, 0);
         assert_eq!(p.get_a(), p.get_y());
+
+        p.set_a(0x00);
+        p.clear_zero();
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.is_zero(), true);
+
+        p.set_a(0b1000_0000);
+        p.clear_negative();
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.is_negative(), true);
 
         // TSX
         p.sp = 0x34;
@@ -1214,6 +1260,18 @@ mod tests {
         assert_eq!(operand_len, 0);
         assert_eq!(p.get_x(), p.sp);
 
+        p.sp = 0x00;
+        p.clear_zero();
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.is_zero(), true);
+
+        p.sp = 0b1000_0000;
+        p.clear_negative();
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.is_negative(), true);
+
         // TXA
         p.set_x(0x34);
         let (opcode, operand) = p.fetch().unwrap();
@@ -1221,6 +1279,18 @@ mod tests {
         p.execute(opcode, operand);
         assert_eq!(operand_len, 0);
         assert_eq!(p.get_a(), p.get_x());
+
+        p.set_x(0x00);
+        p.clear_zero();
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.is_zero(), true);
+
+        p.set_x(0b1000_0000);
+        p.clear_negative();
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.is_negative(), true);
 
         // TXS
         p.set_x(0x56);
@@ -1237,5 +1307,17 @@ mod tests {
         p.execute(opcode, operand);
         assert_eq!(operand_len, 0);
         assert_eq!(p.get_y(), p.get_a());
+
+        p.set_y(0x00);
+        p.clear_zero();
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.is_zero(), true);
+
+        p.set_y(0b1000_0000);
+        p.clear_negative();
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.is_negative(), true);
     }
 }
