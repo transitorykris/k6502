@@ -244,8 +244,9 @@ impl Processor {
 
         // Handle exceptional cases
         match opcode {
-            0xAA | 0xA8 | 0xBA | 0x8A | 0x9A | 0x98 |
-            0x40 | 0x60 | 0xDB | 0xEA | 0xE8 | 0xC8 => {
+            0xAA | 0xA8 | 0xBA | 0x88 | 0x8A | 0x9A | 0x98 |
+            0x40 | 0x60 | 0xDB | 0xEA | 0xE8 | 0xCA |
+            0xC8 => {
                 return Ok((opcode, operand))
             }
             0x20 | 0xA0 | 0xC0 | 0xE0 => {
@@ -375,10 +376,28 @@ impl Processor {
             0xDE => {},
 
             // DEX
-            0xCA => {},
+            0xCA => {
+                self.set_x(self.x.overflowing_sub(1).0);
+                self.clear_zero();
+                self.clear_negative();
+                if self.get_x() == 0x00 {
+                    self.set_zero();
+                } else if self.x & 0b1000_0000 == 0b1000_0000 {
+                    self.set_negative();
+                }
+            },
 
             // DEY
-            0x88 => {},
+            0x88 => {
+                self.set_y(self.y.overflowing_sub(1).0);
+                self.clear_zero();
+                self.clear_negative();
+                if self.get_y() == 0x00 {
+                    self.set_zero();
+                } else if self.y & 0b1000_0000 == 0b1000_0000 {
+                    self.set_negative();
+                }
+            },
 
             // EOR
             0x49 => {},
@@ -1319,5 +1338,57 @@ mod tests {
         assert_eq!(p.pc, 0x1240);
         let (opcode, _) = p.fetch().unwrap();
         assert_eq!(opcode, 0xEA);
+    }
+
+    #[test]
+    fn test_dex_dey_instructions() {
+        let mut p = Processor::new();
+        p.memory[0xFFFC] = 0x34;
+        p.memory[0xFFFD] = 0x12;
+        p.memory[0x1234] = 0xCA;    // DEX
+        p.memory[0x1235] = 0xCA;
+        p.memory[0x1236] = 0xCA;
+        p.memory[0x1237] = 0x88;    // DEY
+        p.memory[0x1238] = 0x88;
+        p.memory[0x1239] = 0x88;
+        p.reset();
+
+        p.set_x(0x02);
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.get_x(), 0x01);
+        assert_eq!(p.is_negative(), false);
+        assert_eq!(p.is_zero(), false);
+
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.get_x(), 0x00);
+        assert_eq!(p.is_negative(), false);
+        assert_eq!(p.is_zero(), true);
+
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.get_x(), 0xFF);
+        assert_eq!(p.is_negative(), true);
+        assert_eq!(p.is_zero(), false);
+
+        p.set_y(0x02);
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.get_y(), 0x01);
+        assert_eq!(p.is_negative(), false);
+        assert_eq!(p.is_zero(), false);
+
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.get_y(), 0x00);
+        assert_eq!(p.is_negative(), false);
+        assert_eq!(p.is_zero(), true);
+
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.get_y(), 0xFF);
+        assert_eq!(p.is_negative(), true);
+        assert_eq!(p.is_zero(), false);
     }
 }
