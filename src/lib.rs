@@ -279,134 +279,122 @@ impl Processor {
     fn execute(&mut self, opcode: Opcode, operand: Operand) -> Option<()> {
         match opcode {
             // ADC
-            0x69 => {Some(())},
-            0x65 => {Some(())},
-            0x75 => {Some(())},
-            0x6D => {Some(())},
-            0x7D => {Some(())},
-            0x79 => {Some(())},
-            0x61 => {Some(())},
-            0x71 => {Some(())},
+            0x69 => {},
+            0x65 => {},
+            0x75 => {},
+            0x6D => {},
+            0x7D => {},
+            0x79 => {},
+            0x61 => {},
+            0x71 => {},
 
             // AND
-            0x29 => {Some(())},
-            0x25 => {Some(())},
-            0x35 => {Some(())},
-            0x2D => {Some(())},
-            0x3D => {Some(())},
-            0x39 => {Some(())},
-            0x21 => {Some(())},
-            0x31 => {Some(())},
+            0x29 => {},
+            0x25 => {},
+            0x35 => {},
+            0x2D => {},
+            0x3D => {},
+            0x39 => {},
+            0x21 => {},
+            0x31 => {},
 
             // ASL
-            0x0A => {Some(())},
-            0x06 => {Some(())},
-            0x16 => {Some(())},
-            0x0E => {Some(())},
-            0x1E => {Some(())},
+            0x0A => {},
+            0x06 => {},
+            0x16 => {},
+            0x0E => {},
+            0x1E => {},
 
             // BCC
-            0x90 => {Some(())},
+            0x90 => {},
 
             // BCS
-            0xB0 => {Some(())},
+            0xB0 => {},
 
             // BEQ
-            0xF0 => {Some(())},
+            0xF0 => {},
 
             // BIT
-            0x24 => {Some(())},
-            0x2C => {Some(())},
+            0x24 => {},
+            0x2C => {},
 
             // BMI
-            0x30 => {Some(())},
+            0x30 => {},
 
             // BNE
-            0xD0 => {Some(())},
+            0xD0 => {},
 
             // BPL
-            0x10 => {Some(())},
+            0x10 => {},
 
             // BRK
-            0x00 => {Some(())},
+            0x00 => {},
 
             // BVC
-            0x50 => {Some(())},
+            0x50 => {},
 
             // BVS
-            0x70 => {Some(())},
+            0x70 => {},
 
             // CLC
-            0x18 => {
-                self.clear_carry();
-                Some(())
-            },
+            0x18 => self.clear_carry(),
 
             // CLD
-            0xD8 => {
-                self.clear_decimal();
-                Some(())
-            },
+            0xD8 => self.clear_decimal(),
 
             // CLI
-            0x58 => {
-                self.clear_interrupt_disable();
-                Some(())
-            },
+            0x58 => self.clear_interrupt_disable(),
 
             // CLV
-            0xB8 => {
-                self.clear_overflow();
-                Some(())
-            },
+            0xB8 => self.clear_overflow(),
 
             // CMP
-            0xC9 => {Some(())},
-            0xC5 => {Some(())},
-            0xD5 => {Some(())},
-            0xCD => {Some(())},
-            0xDD => {Some(())},
-            0xD9 => {Some(())},
-            0xC1 => {Some(())},
-            0xD1 => {Some(())},
+            0xC9 => {},
+            0xC5 => {},
+            0xD5 => {},
+            0xCD => {},
+            0xDD => {},
+            0xD9 => {},
+            0xC1 => {},
+            0xD1 => {},
 
             // CPX
-            0xE0 => {Some(())},
-            0xE4 => {Some(())},
-            0xEC => {Some(())},
+            0xE0 => {},
+            0xE4 => {},
+            0xEC => {},
 
             // CPY
-            0xC0 => {Some(())},
-            0xC4 => {Some(())},
-            0xCC => {Some(())},
+            0xC0 => {},
+            0xC4 => {},
+            0xCC => {},
 
             // DEC
-            0xC6 => {Some(())},
-            0xD6 => {Some(())},
-            0xCE => {Some(())},
-            0xDE => {Some(())},
+            0xC6 => {},
+            0xD6 => {},
+            0xCE => {},
+            0xDE => {},
 
             // DEX
-            0xCA => {Some(())},
+            0xCA => {},
 
             // DEY
-            0x88 => {Some(())},
+            0x88 => {},
 
             // EOR
-            0x49 => {Some(())},
-            0x45 => {Some(())},
-            0x55 => {Some(())},
-            0x4D => {Some(())},
-            0x5D => {Some(())},
-            0x59 => {Some(())},
-            0x41 => {Some(())},
-            0x51 => {Some(())},
+            0x49 => {},
+            0x45 => {},
+            0x55 => {},
+            0x4D => {},
+            0x5D => {},
+            0x59 => {},
+            0x41 => {},
+            0x51 => {},
 
             // INC
-            0xE6 => {Some(())},
-            0xF6 => {Some(())},
-            0xEE => {Some(())},
-            0xFE => {Some(())},
+            0xE6 => {},
+            0xF6 => {},
+            0xEE => {},
+            0xFE => {},
 
             // INX
             0xE8 => {
@@ -416,7 +404,6 @@ impl Processor {
                 } else if self.x & 0b1000_0000 == 0b1000_0000 {
                     self.set_negative();
                 }
-                Some(())
             },
 
             // INY
@@ -427,56 +414,44 @@ impl Processor {
                 } else if self.y & 0b1000_0000 == 0b1000_0000 {
                     self.set_negative();
                 }
-                Some(())
             },
 
             // JMP
-            0x4C => {
-                self.pc = bytes_to_u16(operand);
-                Some(())
-            },
+            0x4C => self.pc = bytes_to_u16(operand),
             0x6C => {
                 let indirect = bytes_to_u16(operand);
                 let addr_lo = self.memory[indirect as usize];
                 let addr_hi = self.memory[(indirect + 1) as usize];
                 let address = bytes_to_u16(vec![addr_lo, addr_hi]);
                 self.pc = address;
-                Some(())
             },
 
             // JSR
-            0x20 => {Some(())},
+            0x20 => {},
 
             // LDA
-            0xA9 => {
-                self.set_a(operand[0]);
-                Some(())
-            },
+            0xA9 => self.set_a(operand[0]),
             0xA5 | 0xAD => {
                 let value = self.get_memory_value(bytes_to_u16(operand));
                 self.set_a(value);
-                Some(())
             },
             0xB5 => {
                 let x = self.get_x();
                 let address = operand[0].overflowing_add(x).0 as u16;
                 let value = self.get_memory_value(address);
                 self.set_a(value);
-                Some(())
             },
             0xBD => {
                 let x = self.get_x() as u16;
                 let address = bytes_to_u16(operand).overflowing_add(x).0;
                 let value = self.get_memory_value(address);
                 self.set_a(value);
-                Some(())
             },
             0xB9 => {            
                 let y = self.get_y() as u16;
                 let address = bytes_to_u16(operand).overflowing_add(y).0;
                 let value = self.get_memory_value(address);
                 self.set_a(value);
-                Some(())
             },
             0xA1 => {
                 let x = self.get_x();
@@ -487,7 +462,6 @@ impl Processor {
                 ];
                 let value = self.get_memory_value(bytes_to_u16(address));
                 self.set_a(value);
-                Some(())
             },
             0xB1 => {
                 let y = self.get_y();
@@ -498,117 +472,107 @@ impl Processor {
                 let address = bytes_to_u16(base_address) + y as u16;
                 let value = self.get_memory_value(address);
                 self.set_a(value);
-                Some(())
             },
 
             // LDX
-            0xA2 => {Some(())},
-            0xA6 => {Some(())},
-            0xB6 => {Some(())},
-            0xAE => {Some(())},
-            0xBE => {Some(())},
+            0xA2 => {},
+            0xA6 => {},
+            0xB6 => {},
+            0xAE => {},
+            0xBE => {},
 
             // LSR
-            0xA0 => {Some(())},
-            0xA4 => {Some(())},
-            0xB4 => {Some(())},
-            0xAC => {Some(())},
-            0xBC => {Some(())},
+            0xA0 => {},
+            0xA4 => {},
+            0xB4 => {},
+            0xAC => {},
+            0xBC => {},
 
             // NOP
-            0xEA => Some(()),
+            0xEA => {},
 
             // ORA
-            0x09 => {Some(())},
-            0x05 => {Some(())},
-            0x15 => {Some(())},
-            0x0D => {Some(())},
-            0x1D => {Some(())},
-            0x19 => {Some(())},
-            0x01 => {Some(())},
-            0x11 => {Some(())},
+            0x09 => {},
+            0x05 => {},
+            0x15 => {},
+            0x0D => {},
+            0x1D => {},
+            0x19 => {},
+            0x01 => {},
+            0x11 => {},
 
             // PHA
-            0x48 => {Some(())},
+            0x48 => {},
 
             // PHP
-            0x08 => {Some(())},
+            0x08 => {},
 
             // PLA
-            0x68 => {Some(())},
+            0x68 => {},
 
             // PLP
-            0x28 => {Some(())},
+            0x28 => {},
 
             // ROL
-            0x2A => {Some(())},
-            0x26 => {Some(())},
-            0x36 => {Some(())},
-            0x2E => {Some(())},
-            0x3E => {Some(())},
+            0x2A => {},
+            0x26 => {},
+            0x36 => {},
+            0x2E => {},
+            0x3E => {},
 
             // ROR
-            0x6A => {Some(())},
-            0x66 => {Some(())},
-            0x76 => {Some(())},
-            0x6E => {Some(())},
-            0x7E => {Some(())},
+            0x6A => {},
+            0x66 => {},
+            0x76 => {},
+            0x6E => {},
+            0x7E => {},
 
             // RTI
-            0x40 => {Some(())},
+            0x40 => {},
 
             // RTS
-            0x60 => {Some(())},
+            0x60 => {},
 
             // SBC
-            0xE9 => {Some(())},
-            0xE5 => {Some(())},
-            0xF5 => {Some(())},
-            0xED => {Some(())},
-            0xFD => {Some(())},
-            0xF9 => {Some(())},
-            0xE1 => {Some(())},
-            0xF1 => {Some(())},
+            0xE9 => {},
+            0xE5 => {},
+            0xF5 => {},
+            0xED => {},
+            0xFD => {},
+            0xF9 => {},
+            0xE1 => {},
+            0xF1 => {},
 
             // SEC
-            0x38 => {
-                self.set_carry();
-                Some(())
-            },
+            0x38 => self.set_carry(),
 
             // SED
-            0xF8 => {
-                self.set_decimal();
-                Some(())
-            },
+            0xF8 => self.set_decimal(),
 
             // SEI
-            0x78 => {
-                self.set_interrupt_disable();
-                Some(())
-            },
+            0x78 => self.set_interrupt_disable(),
 
             // STA
-            0x85 => {Some(())},
-            0x95 => {Some(())},
-            0x8D => {Some(())},
-            0x9D => {Some(())},
-            0x99 => {Some(())},
-            0x81 => {Some(())},
-            0x91 => {Some(())},
+            0x85 => {},
+            0x95 => {},
+            0x8D => {},
+            0x9D => {},
+            0x99 => {},
+            0x81 => {},
+            0x91 => {},
 
             // STP (WDC 65c02)
-            0xDB => None,
+            0xDB => return None,
 
             // STX
-            0x86 => {Some(())},
-            0x96 => {Some(())},
-            0x8E => {Some(())},
+            0x86 => {},
+            0x96 => {},
+            0x8E => {},
 
             // STY
-            0x84 => {Some(())},
-            0x94 => {Some(())},
-            0x8C => {Some(())},
+            0x84 => {},
+            0x94 => {},
+            0x8C => {},
 
             // TAX
             0xAA => {
@@ -619,7 +583,6 @@ impl Processor {
                 } else if self.get_x() & 0b1000_0000 == 0b1000_0000 {
                     self.set_negative();
                 }
-                Some(())
             },
 
             // TAY
@@ -631,7 +594,6 @@ impl Processor {
                 } else if self.get_y() & 0b1000_0000 == 0b1000_0000 {
                     self.set_negative();
                 }
-                Some(())
             },
 
             // TSX
@@ -643,7 +605,6 @@ impl Processor {
                 } else if self.get_x() & 0b1000_0000 == 0b1000_0000 {
                     self.set_negative();
                 }
-                Some(())
             },
 
             // TXA
@@ -655,14 +616,12 @@ impl Processor {
                 } else if self.get_a() & 0b1000_0000 == 0b1000_0000 {
                     self.set_negative();
                 }
-                Some(())
             },
 
             // TXS
             0x9A => {
                 let x = self.get_x();
                 self.set_sp(x);
-                Some(())
             },
 
             // TYA
@@ -674,11 +633,11 @@ impl Processor {
                 } else if self.get_a() & 0b1000_0000 == 0b1000_0000 {
                     self.set_negative();
                 }
-                Some(())
             },
 
             _ => panic!("Unknown opcode {}", opcode),
         }
+        Some(())
     }
 
     // Retrieve the memory value at the given address
