@@ -431,8 +431,18 @@ impl Processor {
             },
 
             // JMP
-            0x4C => {Some(())},
-            0x6C => {Some(())},
+            0x4C => {
+                self.pc = bytes_to_u16(operand);
+                Some(())
+            },
+            0x6C => {
+                let indirect = bytes_to_u16(operand);
+                let addr_lo = self.memory[indirect as usize];
+                let addr_hi = self.memory[(indirect + 1) as usize];
+                let address = bytes_to_u16(vec![addr_lo, addr_hi]);
+                self.pc = address;
+                Some(())
+            },
 
             // JSR
             0x20 => {Some(())},
@@ -1319,5 +1329,36 @@ mod tests {
         let (opcode, operand) = p.fetch().unwrap();
         p.execute(opcode, operand);
         assert_eq!(p.is_negative(), true);
+    }
+
+    #[test]
+    fn test_jmp_instruction() {
+        let mut p = Processor::new();
+        p.memory[0xFFFC] = 0x34;
+        p.memory[0xFFFD] = 0x12;
+        p.memory[0x1234] = 0x4C;    // JMP absolute
+        p.memory[0x1235] = 0x40;    // Little endian
+        p.memory[0x1236] = 0x12;
+        p.memory[0x1240] = 0xEA;
+        p.memory[0x1241] = 0x6C;    // JMP indirect
+        p.memory[0x1242] = 0x35;
+        p.memory[0x1243] = 0x12;
+        p.reset();
+
+        let (opcode, operand) = p.fetch().unwrap();
+        assert_eq!(operand.len(), 2);
+        p.execute(opcode, operand);
+        assert_eq!(p.pc, 0x1240);
+        let (opcode, operand) = p.fetch().unwrap();
+        assert_eq!(opcode, 0xEA);
+        p.execute(opcode, operand);
+
+        let (opcode, operand) = p.fetch().unwrap();
+        assert_eq!(opcode, 0x6C);
+        assert_eq!(operand.len(), 2);
+        p.execute(opcode, operand);
+        assert_eq!(p.pc, 0x1240);
+        let (opcode, _) = p.fetch().unwrap();
+        assert_eq!(opcode, 0xEA);
     }
 }
