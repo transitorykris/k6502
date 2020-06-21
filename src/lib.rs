@@ -420,7 +420,7 @@ impl Processor {
             0xE8 => {
                 self.x = self.x.overflowing_add(1).0;
                 if self.x == 0 {
-                    self.set_overflow();
+                    self.set_zero();
                 } else if self.x & 0b1000_0000 == 0b1000_0000 {
                     self.set_negative();
                 }
@@ -431,7 +431,7 @@ impl Processor {
             0xC8 => {
                 self.y = self.y.overflowing_add(1).0;
                 if self.y == 0 {
-                    self.set_overflow();
+                    self.set_zero();
                 } else if self.y & 0b1000_0000 == 0b1000_0000 {
                     self.set_negative();
                 }
@@ -1153,7 +1153,7 @@ mod tests {
         let (opcode, operand) = p.fetch().unwrap();
         p.execute(opcode, operand);
         assert_eq!(p.get_x(), 0);
-        assert_eq!(p.p & OVERFLOW_FLAG, OVERFLOW_FLAG);
+        assert_eq!(p.p & ZERO_FLAG, ZERO_FLAG);
 
         p.set_x(0x7F);
         let (opcode, operand) = p.fetch().unwrap();
@@ -1172,7 +1172,7 @@ mod tests {
         let (opcode, operand) = p.fetch().unwrap();
         p.execute(opcode, operand);
         assert_eq!(p.get_y(), 0);
-        assert_eq!(p.p & OVERFLOW_FLAG, OVERFLOW_FLAG);
+        assert_eq!(p.p & ZERO_FLAG, ZERO_FLAG);
 
         p.set_y(0x7F);
         let (opcode, operand) = p.fetch().unwrap();
