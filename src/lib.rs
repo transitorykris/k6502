@@ -448,7 +448,6 @@ impl Processor {
             0xFE => {},
 
             // INX
-            // BUG! Fix me -- zero should be set not overflow
             0xE8 => {
                 self.x = self.x.overflowing_add(1).0;
                 if self.x == 0 {
@@ -459,7 +458,6 @@ impl Processor {
             },
 
             // INY
-            // BUG! Fix me -- zero should be set not overflow
             0xC8 => {
                 self.y = self.y.overflowing_add(1).0;
                 if self.y == 0 {
