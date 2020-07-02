@@ -316,8 +316,40 @@ impl Processor {
             0xF0 => {},
 
             // BIT
-            0x24 => {},
-            0x2C => {},
+            0x24 => {
+                let result = self.get_a() & self.memory[operand[0] as usize];
+                println!("Result {}", result);
+                if result == 0 {
+                    self.set_zero();
+                }
+                if result & NEGATIVE_FLAG == NEGATIVE_FLAG {
+                    self.set_negative();
+                } else {
+                    self.clear_negative();
+                }
+                if result & OVERFLOW_FLAG == OVERFLOW_FLAG {
+                    self.set_overflow();
+                } else {
+                    self.clear_overflow();
+                }
+            },
+            0x2C => {
+                let result = self.get_a() & self.memory[bytes_to_u16(operand) as usize];
+                println!("Result {}", result);
+                if result == 0 {
+                    self.set_zero();
+                }
+                if result & NEGATIVE_FLAG == NEGATIVE_FLAG {
+                    self.set_negative();
+                } else {
+                    self.clear_negative();
+                }
+                if result & OVERFLOW_FLAG == OVERFLOW_FLAG {
+                    self.set_overflow();
+                } else {
+                    self.clear_overflow();
+                }
+            },
 
             // BMI
             0x30 => {},
@@ -1390,6 +1422,78 @@ mod tests {
         let (opcode, operand) = p.fetch().unwrap();
         p.execute(opcode, operand);
         assert_eq!(p.get_y(), 0xFF);
+        assert_eq!(p.is_negative(), true);
+        assert_eq!(p.is_zero(), false);
+    }
+
+    #[test]
+    fn test_bit_instruction() {
+        let mut p = Processor::new();
+        p.memory[0xFFFC] = 0x34;
+        p.memory[0xFFFD] = 0x12;
+        p.memory[0x0000] = 0b0000_0001;
+        p.memory[0x0001] = 0b0100_0000;
+        p.memory[0x0002] = 0b1000_0000;
+        p.memory[0x1000] = 0b0000_0001;
+        p.memory[0x1001] = 0b0100_0000;
+        p.memory[0x1002] = 0b1000_0000;
+        p.memory[0x1234] = 0x2C;    // BIT absolute
+        p.memory[0x1235] = 0x00;
+        p.memory[0x1236] = 0x10;
+        p.memory[0x1237] = 0x2C;
+        p.memory[0x1238] = 0x01;
+        p.memory[0x1239] = 0x10;
+        p.memory[0x123A] = 0x2C;
+        p.memory[0x123B] = 0x02;
+        p.memory[0x123C] = 0x10;
+        p.memory[0x123D] = 0x24;    // BIT zeropage
+        p.memory[0x123E] = 0x00;
+        p.memory[0x123F] = 0x24;
+        p.memory[0x1240] = 0x01;
+        p.memory[0x1241] = 0x24;
+        p.memory[0x1242] = 0x02;
+        p.reset();
+
+        p.set_a(0xFF);
+        let (opcode, operand) = p.fetch().unwrap();
+        assert_eq!(opcode, 0x2C);
+        p.execute(opcode, operand);
+        assert_eq!(p.is_overflow(), false);
+        assert_eq!(p.is_negative(), false);
+        assert_eq!(p.is_zero(), false);
+
+        let (opcode, operand) = p.fetch().unwrap();
+        assert_eq!(opcode, 0x2C);
+        p.execute(opcode, operand);
+        assert_eq!(p.is_overflow(), true);
+        assert_eq!(p.is_negative(), false);
+        assert_eq!(p.is_zero(), false);
+
+        let (opcode, operand) = p.fetch().unwrap();
+        assert_eq!(opcode, 0x2C);
+        p.execute(opcode, operand);
+        assert_eq!(p.is_overflow(), false);
+        assert_eq!(p.is_negative(), true);
+        assert_eq!(p.is_zero(), false);
+
+        let (opcode, operand) = p.fetch().unwrap();
+        assert_eq!(opcode, 0x24);
+        p.execute(opcode, operand);
+        assert_eq!(p.is_overflow(), false);
+        assert_eq!(p.is_negative(), false);
+        assert_eq!(p.is_zero(), false);
+
+        let (opcode, operand) = p.fetch().unwrap();
+        assert_eq!(opcode, 0x24);
+        p.execute(opcode, operand);
+        assert_eq!(p.is_overflow(), true);
+        assert_eq!(p.is_negative(), false);
+        assert_eq!(p.is_zero(), false);
+
+        let (opcode, operand) = p.fetch().unwrap();
+        assert_eq!(opcode, 0x24);
+        p.execute(opcode, operand);
+        assert_eq!(p.is_overflow(), false);
         assert_eq!(p.is_negative(), true);
         assert_eq!(p.is_zero(), false);
     }
