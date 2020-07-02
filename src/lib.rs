@@ -624,9 +624,12 @@ impl Processor {
             0xDB => return None,
 
             // STX
-            0x86 => {},
-            0x96 => {},
-            0x8E => {},
+            0x86 => self.memory[operand[0] as usize] = self.get_x(),
+            0x96 => {
+                let y = self.get_y();
+                self.memory[y.overflowing_add(operand[0]).0 as usize] = self.get_x();
+            },
+            0x8E => self.memory[bytes_to_u16(operand) as usize] = self.get_x(),
 
             // STY
             0x84 => {},
@@ -1532,5 +1535,39 @@ mod tests {
         p.execute(opcode, operand);
         assert_eq!(p.get_a(), 0xCD);
         assert_eq!(p.get_sp(), 0xAB);
+    }
+
+    #[test]
+    fn text_stx_instructions() {
+        let mut p = Processor::new();
+        p.memory[0xFFFC] = 0x34;
+        p.memory[0xFFFD] = 0x12;
+        p.memory[0x1234] = 0x86;    // STX zeropage
+        p.memory[0x1235] = 0x01;
+        p.memory[0x1236] = 0x96;    // STX zeropage,Y
+        p.memory[0x1237] = 0x04;
+        p.memory[0x1238] = 0x8E;    // STX absolute
+        p.memory[0x1239] = 0x00;
+        p.memory[0x123A] = 0x10;
+        p.reset();
+
+        p.set_x(0xAB);
+        let (opcode, operand) = p.fetch().unwrap();
+        assert_eq!(opcode, 0x86);
+        p.execute(opcode, operand);
+        assert_eq!(p.memory[0x01], 0xAB);
+
+        p.set_x(0xBC);
+        p.set_y(0x01);
+        let (opcode, operand) = p.fetch().unwrap();
+        assert_eq!(opcode, 0x96);
+        p.execute(opcode, operand);
+        assert_eq!(p.memory[0x05], 0xBC);
+
+        p.set_x(0xCD);
+        let (opcode, operand) = p.fetch().unwrap();
+        assert_eq!(opcode, 0x8E);
+        p.execute(opcode, operand);
+        assert_eq!(p.memory[0x1000], 0xCD);
     }
 }
