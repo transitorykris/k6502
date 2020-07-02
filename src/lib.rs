@@ -246,7 +246,7 @@ impl Processor {
         match opcode {
             0xAA | 0xA8 | 0xBA | 0x88 | 0x8A | 0x9A | 0x98 |
             0x40 | 0x60 | 0xDB | 0xEA | 0xE8 | 0xCA |
-            0xC8 => {
+            0xC8 | 0x48 | 0x68 => {
                 return Ok((opcode, operand))
             }
             0x20 | 0xA0 | 0xC0 | 0xE0 => {
@@ -555,13 +555,21 @@ impl Processor {
             0x11 => {},
 
             // PHA
-            0x48 => {},
+            0x48 => {
+                let sp = self.get_sp();
+                self.memory[sp as usize] = self.get_a();
+                self.set_sp(sp.overflowing_sub(1).0);
+            },
 
             // PHP
             0x08 => {},
 
             // PLA
-            0x68 => {},
+            0x68 => {
+                let sp = self.get_sp().overflowing_add(1).0;
+                self.set_a(self.memory[sp as usize]);
+                self.set_sp(sp);
+            },
 
             // PLP
             0x28 => {},
@@ -1496,5 +1504,35 @@ mod tests {
         assert_eq!(p.is_overflow(), false);
         assert_eq!(p.is_negative(), true);
         assert_eq!(p.is_zero(), false);
+    }
+
+    #[test]
+    fn test_pha_pla_instructions() {
+        let mut p = Processor::new();
+        p.memory[0xFFFC] = 0x34;
+        p.memory[0xFFFD] = 0x12;
+        p.memory[0x1234] = 0x9A;    // TXA to put our stack pointer in a known place
+        p.memory[0x1235] = 0x48;    // PHA
+        p.memory[0x1236] = 0x68;    // PLA
+        p.reset();
+
+        p.set_x(0xAB);
+        let (opcode, operand) = p.fetch().unwrap();
+        p.execute(opcode, operand);
+        assert_eq!(p.get_sp(), 0xAB);
+
+        p.set_a(0xCD);
+        let (opcode, operand) = p.fetch().unwrap();
+        assert_eq!(opcode, 0x48);
+        p.execute(opcode, operand);
+        assert_eq!(p.memory[0xAB], 0xCD);
+        assert_eq!(p.get_sp(), 0xAA);
+
+        p.set_a(0x00);              // Reset so we're confident we get 0xAB back
+        let (opcode, operand) = p.fetch().unwrap();
+        assert_eq!(opcode, 0x68);
+        p.execute(opcode, operand);
+        assert_eq!(p.get_a(), 0xCD);
+        assert_eq!(p.get_sp(), 0xAB);
     }
 }
