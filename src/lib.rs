@@ -237,6 +237,19 @@ impl Processor {
         false
     }
 
+    fn push(&mut self, value: u8) {
+        let sp = self.get_sp();
+        self.memory[0x0100 + sp as usize] = value;
+        self.set_sp(sp.overflowing_sub(1).0);
+    }
+
+    fn pull(&mut self) -> u8 {
+        let sp = self.get_sp().overflowing_add(1).0;
+        let value = self.memory[0x0100 + sp as usize];
+        self.set_sp(sp);
+        return value
+    }
+
     // Fetches the next opcode and operand
     fn fetch(&mut self) -> Result<(Opcode, Operand), Box<dyn Error>> {
         let opcode = self.next().unwrap();
@@ -553,22 +566,18 @@ impl Processor {
             0x11 => {},
 
             // PHA
-            // BUG: this isn't right, the stack is from 0x100 to 0x1FF
             0x48 => {
-                let sp = self.get_sp();
-                self.memory[sp as usize] = self.get_a();
-                self.set_sp(sp.overflowing_sub(1).0);
+                let value = self.get_a();
+                self.push(value);
             },
 
             // PHP
             0x08 => {},
 
             // PLA
-            // BUG: this isn't right, the stack is from 0x100 to 0x1FF
             0x68 => {
-                let sp = self.get_sp().overflowing_add(1).0;
-                self.set_a(self.memory[sp as usize]);
-                self.set_sp(sp);
+                let value = self.pull();
+                self.set_a(value);
             },
 
             // PLP
@@ -1531,7 +1540,7 @@ mod tests {
         let (opcode, operand) = p.fetch().unwrap();
         assert_eq!(opcode, 0x48);
         p.execute(opcode, operand);
-        assert_eq!(p.memory[0xAB], 0xCD);
+        assert_eq!(p.memory[0x01AB], 0xCD);
         assert_eq!(p.get_sp(), 0xAA);
 
         p.set_a(0x00);              // Reset so we're confident we get 0xAB back
