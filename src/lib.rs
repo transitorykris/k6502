@@ -1540,7 +1540,7 @@ mod tests {
     }
 
     #[test]
-    fn text_stx_instructions() {
+    fn test_stx_instructions() {
         let mut p = Processor::new();
         p.memory[0xFFFC] = 0x34;
         p.memory[0xFFFD] = 0x12;
