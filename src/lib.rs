@@ -634,9 +634,12 @@ impl Processor {
             0x8E => self.memory[bytes_to_u16(operand) as usize] = self.get_x(),
 
             // STY
-            0x84 => {},
-            0x94 => {},
-            0x8C => {},
+            0x84 => self.memory[operand[0] as usize] = self.get_y(),
+            0x94 => {
+                let x = self.get_x();
+                self.memory[x.overflowing_add(operand[0]).0 as usize] = self.get_y();
+            },
+            0x8C => self.memory[bytes_to_u16(operand) as usize] = self.get_y(),
 
             // TAX
             0xAA => {
@@ -1569,6 +1572,40 @@ mod tests {
         p.set_x(0xCD);
         let (opcode, operand) = p.fetch().unwrap();
         assert_eq!(opcode, 0x8E);
+        p.execute(opcode, operand);
+        assert_eq!(p.memory[0x1000], 0xCD);
+    }
+
+    #[test]
+    fn test_sty_instructions() {
+        let mut p = Processor::new();
+        p.memory[0xFFFC] = 0x34;
+        p.memory[0xFFFD] = 0x12;
+        p.memory[0x1234] = 0x84;    // STY zeropage
+        p.memory[0x1235] = 0x01;
+        p.memory[0x1236] = 0x94;    // STY zeropage,X
+        p.memory[0x1237] = 0x04;
+        p.memory[0x1238] = 0x8C;    // STY absolute
+        p.memory[0x1239] = 0x00;
+        p.memory[0x123A] = 0x10;
+        p.reset();
+
+        p.set_y(0xAB);
+        let (opcode, operand) = p.fetch().unwrap();
+        assert_eq!(opcode, 0x84);
+        p.execute(opcode, operand);
+        assert_eq!(p.memory[0x01], 0xAB);
+
+        p.set_y(0xBC);
+        p.set_x(0x01);
+        let (opcode, operand) = p.fetch().unwrap();
+        assert_eq!(opcode, 0x94);
+        p.execute(opcode, operand);
+        assert_eq!(p.memory[0x05], 0xBC);
+
+        p.set_y(0xCD);
+        let (opcode, operand) = p.fetch().unwrap();
+        assert_eq!(opcode, 0x8C);
         p.execute(opcode, operand);
         assert_eq!(p.memory[0x1000], 0xCD);
     }
