@@ -553,6 +553,7 @@ impl Processor {
             0x11 => {},
 
             // PHA
+            // BUG: this isn't right, the stack is from 0x100 to 0x1FF
             0x48 => {
                 let sp = self.get_sp();
                 self.memory[sp as usize] = self.get_a();
@@ -563,6 +564,7 @@ impl Processor {
             0x08 => {},
 
             // PLA
+            // BUG: this isn't right, the stack is from 0x100 to 0x1FF
             0x68 => {
                 let sp = self.get_sp().overflowing_add(1).0;
                 self.set_a(self.memory[sp as usize]);
